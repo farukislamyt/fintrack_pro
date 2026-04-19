@@ -12,7 +12,6 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
-  bool _notifications = true;
 
   void _clearData() {
     showDialog(
@@ -80,7 +79,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             [
               _buildSettingsTile(context, 'Currency', LucideIcons.coins, trailing: Text(prefs.currencySymbol)),
               _buildSettingsTile(context, 'Notifications', LucideIcons.bell, 
-                trailing: Switch(value: _notifications, onChanged: (v) => setState(() => _notifications = v))),
+                trailing: Switch(
+                  value: prefs.notificationsEnabled, 
+                  onChanged: (v) => ref.read(preferencesProvider.notifier).updateNotifications(v),
+                )),
               _buildSettingsTile(context, 'Dark Mode', LucideIcons.moon, 
                 trailing: Switch(
                   value: prefs.themeMode == ThemeMode.dark, 

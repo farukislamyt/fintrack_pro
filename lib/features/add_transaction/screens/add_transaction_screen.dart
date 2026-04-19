@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:lucide_icons/lucide_icons.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/models/transaction_model.dart';
 import '../../../core/providers/transaction_provider.dart';
+import '../../../core/providers/preferences_provider.dart';
 
 class AddTransactionScreen extends ConsumerStatefulWidget {
   const AddTransactionScreen({super.key});
@@ -46,7 +49,10 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     ref.read(transactionProvider.notifier).addTransaction(transaction);
     
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Transaction Saved!')),
+      const SnackBar(
+        content: Text('Transaction Saved!'),
+        behavior: SnackBarBehavior.floating,
+      ),
     );
     
     _amountController.clear();
@@ -58,6 +64,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currencySymbol = ref.watch(preferencesProvider).currencySymbol;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Add Transaction'),
@@ -69,8 +77,16 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
           children: [
             SegmentedButton<TransactionType>(
               segments: const [
-                ButtonSegment(value: TransactionType.income, label: Text('Income')),
-                ButtonSegment(value: TransactionType.expense, label: Text('Expense')),
+                ButtonSegment(
+                  value: TransactionType.income, 
+                  label: Text('Income'),
+                  icon: Icon(LucideIcons.arrowDownToLine),
+                ),
+                ButtonSegment(
+                  value: TransactionType.expense, 
+                  label: Text('Expense'),
+                  icon: Icon(LucideIcons.arrowUpFromLine),
+                ),
               ],
               selected: {_selectedType},
               onSelectionChanged: (Set<TransactionType> newSelection) {
@@ -81,18 +97,18 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                       : _expenseCategories.first;
                 });
               },
-            ),
+            ).animate().fade().slideY(begin: 0.1, end: 0),
             const SizedBox(height: 24),
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: Theme.of(context).cardTheme.color,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: const [
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
                   BoxShadow(
-                    color: Colors.black12,
-                    blurRadius: 10,
-                    offset: Offset(0, 5),
+                    color: Colors.black.withValues(alpha: 0.05),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
                   ),
                 ],
               ),
@@ -100,20 +116,30 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                 children: [
                   TextField(
                     controller: _amountController,
-                    decoration: const InputDecoration(
+                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                    decoration: InputDecoration(
                       labelText: 'Amount',
-                      prefixIcon: Icon(Icons.attach_money),
-                      border: OutlineInputBorder(),
+                      prefixText: '$currencySymbol ',
+                      prefixStyle: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
+                      ),
                     ),
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   DropdownButtonFormField<String>(
                     initialValue: _selectedCategory,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: 'Category',
-                      prefixIcon: Icon(Icons.category),
-                      border: OutlineInputBorder(),
+                      prefixIcon: const Icon(LucideIcons.tag),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
+                      ),
                     ),
                     items: (_selectedType == TransactionType.income ? _incomeCategories : _expenseCategories)
                         .map((c) => DropdownMenuItem(value: c, child: Text(c)))
@@ -124,15 +150,8 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                       }
                     },
                   ),
-                  const SizedBox(height: 16),
-                  ListTile(
-                    title: const Text('Date'),
-                    subtitle: Text(DateFormat.yMMMd().format(_selectedDate)),
-                    leading: const Icon(Icons.calendar_today),
-                    shape: RoundedRectangleBorder(
-                      side: BorderSide(color: Colors.grey.withValues(alpha: 0.5)),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
+                  const SizedBox(height: 20),
+                  InkWell(
                     onTap: () async {
                       final date = await showDatePicker(
                         context: context,
@@ -144,33 +163,54 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                         setState(() => _selectedDate = date);
                       }
                     },
-                  ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _descriptionController,
-                    decoration: const InputDecoration(
-                      labelText: 'Description (Optional)',
-                      prefixIcon: Icon(Icons.description),
-                      border: OutlineInputBorder(),
+                    borderRadius: BorderRadius.circular(16),
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        labelText: 'Date',
+                        prefixIcon: const Icon(LucideIcons.calendar),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          borderSide: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
+                        ),
+                      ),
+                      child: Text(
+                        DateFormat.yMMMMd().format(_selectedDate),
+                        style: const TextStyle(fontSize: 16),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
+                  TextField(
+                    controller: _descriptionController,
+                    decoration: InputDecoration(
+                      labelText: 'Description (Optional)',
+                      prefixIcon: const Icon(LucideIcons.fileText),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
                   ElevatedButton(
                     onPressed: _saveTransaction,
                     style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      padding: const EdgeInsets.symmetric(vertical: 18),
                       backgroundColor: Theme.of(context).primaryColor,
                       foregroundColor: Colors.white,
-                      minimumSize: const Size(double.infinity, 50),
+                      minimumSize: const Size(double.infinity, 60),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
                       ),
+                      elevation: 4,
                     ),
-                    child: const Text('Save Transaction', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    child: const Text('Save Transaction', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
-            ),
+            ).animate().fade(delay: 200.ms).slideY(begin: 0.1, end: 0),
           ],
         ),
       ),
