@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/main_navigation/screens/main_navigation_screen.dart';
 import '../../features/dashboard/screens/dashboard_screen.dart';
@@ -6,51 +7,79 @@ import '../../features/reports/screens/reports_screen.dart';
 import '../../features/add_transaction/screens/add_transaction_screen.dart';
 import '../../features/history/screens/history_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
+import '../../features/onboarding/screens/onboarding_screen.dart';
+import '../providers/preferences_provider.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<NavigatorState> _shellNavigatorKey = GlobalKey<NavigatorState>();
 
-final GoRouter appRouter = GoRouter(
-  navigatorKey: _rootNavigatorKey,
-  initialLocation: '/dashboard',
-  routes: [
-    ShellRoute(
-      navigatorKey: _shellNavigatorKey,
-      builder: (context, state, child) {
-        return MainNavigationScreen(child: child);
-      },
-      routes: [
-        GoRoute(
-          path: '/dashboard',
-          pageBuilder: (context, state) => const NoTransitionPage(
-            child: DashboardScreen(),
-          ),
+final routerProvider = Provider<GoRouter>((ref) {
+  final preferences = ref.watch(preferencesProvider);
+
+  return GoRouter(
+    navigatorKey: _rootNavigatorKey,
+    initialLocation: preferences.hasCompletedOnboarding ? '/dashboard' : '/onboarding',
+    redirect: (context, state) {
+      if (!preferences.isLoaded) return null; // Wait for initial preferences load
+      
+      final isGoingToOnboarding = state.matchedLocation == '/onboarding';
+      final hasFinishedOnboarding = preferences.hasCompletedOnboarding;
+
+      if (!hasFinishedOnboarding && !isGoingToOnboarding) {
+        return '/onboarding';
+      }
+      
+      if (hasFinishedOnboarding && isGoingToOnboarding) {
+        return '/dashboard';
+      }
+
+      return null;
+    },
+    routes: [
+      GoRoute(
+        path: '/onboarding',
+        pageBuilder: (context, state) => const NoTransitionPage(
+          child: OnboardingScreen(),
         ),
-        GoRoute(
-          path: '/reports',
-          pageBuilder: (context, state) => const NoTransitionPage(
-            child: ReportsScreen(),
+      ),
+      ShellRoute(
+        navigatorKey: _shellNavigatorKey,
+        builder: (context, state, child) {
+          return MainNavigationScreen(child: child);
+        },
+        routes: [
+          GoRoute(
+            path: '/dashboard',
+            pageBuilder: (context, state) => const NoTransitionPage(
+               child: DashboardScreen(),
+            ),
           ),
-        ),
-        GoRoute(
-          path: '/add_transaction',
-          pageBuilder: (context, state) => const NoTransitionPage(
-            child: AddTransactionScreen(),
+          GoRoute(
+            path: '/reports',
+            pageBuilder: (context, state) => const NoTransitionPage(
+               child: ReportsScreen(),
+            ),
           ),
-        ),
-        GoRoute(
-          path: '/history',
-          pageBuilder: (context, state) => const NoTransitionPage(
-            child: HistoryScreen(),
+          GoRoute(
+            path: '/add_transaction',
+            pageBuilder: (context, state) => const NoTransitionPage(
+               child: AddTransactionScreen(),
+            ),
           ),
-        ),
-        GoRoute(
-          path: '/settings',
-          pageBuilder: (context, state) => const NoTransitionPage(
-            child: SettingsScreen(),
+          GoRoute(
+            path: '/history',
+            pageBuilder: (context, state) => const NoTransitionPage(
+               child: HistoryScreen(),
+            ),
           ),
-        ),
-      ],
-    ),
-  ],
-);
+          GoRoute(
+            path: '/settings',
+            pageBuilder: (context, state) => const NoTransitionPage(
+               child: SettingsScreen(),
+            ),
+          ),
+        ],
+      ),
+    ],
+  );
+});

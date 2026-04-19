@@ -22,15 +22,7 @@ class TransactionNotifier extends Notifier<List<TransactionModel>> {
           ..sort((a, b) => b.date.compareTo(a.date));
       state = loaded;
     } else {
-      // Load some dummy data if empty for demonstration
-      final dummyData = [
-        TransactionModel(amount: 5240, date: DateTime.now().subtract(const Duration(days: 1)), type: TransactionType.income, category: 'Salary', description: 'Monthly Salary'),
-        TransactionModel(amount: 120, date: DateTime.now().subtract(const Duration(days: 2)), type: TransactionType.expense, category: 'Food', description: 'Groceries'),
-        TransactionModel(amount: 45, date: DateTime.now().subtract(const Duration(days: 2)), type: TransactionType.expense, category: 'Transport', description: 'Gas'),
-        TransactionModel(amount: 80, date: DateTime.now().subtract(const Duration(days: 3)), type: TransactionType.expense, category: 'Entertainment', description: 'Movies'),
-      ];
-      state = dummyData;
-      _saveToPrefs(dummyData);
+      state = [];
     }
   }
 

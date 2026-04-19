@@ -6,6 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'dart:math' as math;
 import '../../../core/models/transaction_model.dart';
 import '../../../core/providers/transaction_provider.dart';
+import '../../../core/providers/preferences_provider.dart';
 
 class HistoryScreen extends ConsumerWidget {
   const HistoryScreen({super.key});
@@ -13,7 +14,8 @@ class HistoryScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final transactions = ref.watch(filteredTransactionsProvider);
-    final currencyFormat = NumberFormat.currency(symbol: '\$');
+    final currencySymbol = ref.watch(preferencesProvider).currencySymbol;
+    final currencyFormat = NumberFormat.currency(symbol: currencySymbol);
 
     return Scaffold(
       body: CustomScrollView(

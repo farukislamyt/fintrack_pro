@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../core/providers/transaction_provider.dart';
+import '../../../core/providers/preferences_provider.dart';
 import '../../../core/models/transaction_model.dart';
 import 'package:intl/intl.dart';
 
@@ -17,7 +18,8 @@ class ReportsScreen extends ConsumerWidget {
     final income = ref.watch(reportsIncomeProvider);
     final expense = ref.watch(reportsExpenseProvider);
     final transactions = ref.watch(reportsFilteredTransactionsProvider);
-    final currencyFormat = NumberFormat.currency(symbol: '\$');
+    final currencySymbol = ref.watch(preferencesProvider).currencySymbol;
+    final currencyFormat = NumberFormat.currency(symbol: currencySymbol);
 
     final netCashflow = income - expense;
 
@@ -107,14 +109,14 @@ class ReportsScreen extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      _buildLegend(context, expensesByCategory),
+                      _buildLegend(context, expensesByCategory, currencyFormat),
                     ]
                   ],
                 ),
               ).animate().fade(duration: 500.ms, delay: 300.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
 
               // Insights Panel
-              _buildInsightsPanel(context, transactions, expensesByCategory)
+              _buildInsightsPanel(context, transactions, expensesByCategory, currencyFormat)
                   .animate().fade(duration: 500.ms, delay: 400.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
               const SizedBox(height: 32),
             ],
@@ -334,8 +336,7 @@ class ReportsScreen extends ConsumerWidget {
     }).toList();
   }
 
-  Widget _buildLegend(BuildContext context, Map<String, double> data) {
-    final currencyFormat = NumberFormat.currency(symbol: '\$');
+  Widget _buildLegend(BuildContext context, Map<String, double> data, NumberFormat currencyFormat) {
     final colors = [Colors.blue, Colors.redAccent, Colors.green, Colors.orange, Colors.purple, Colors.teal];
     int colorIndex = 0;
 
@@ -358,7 +359,7 @@ class ReportsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildInsightsPanel(BuildContext context, List<TransactionModel> transactions, Map<String, double> expensesByCategory) {
+  Widget _buildInsightsPanel(BuildContext context, List<TransactionModel> transactions, Map<String, double> expensesByCategory, NumberFormat currencyFormat) {
     TransactionModel? highestExpense;
     for (var tx in transactions) {
       if (tx.type == TransactionType.expense) {
@@ -396,7 +397,7 @@ class ReportsScreen extends ConsumerWidget {
             contentPadding: EdgeInsets.zero,
             leading: const CircleAvatar(backgroundColor: Colors.redAccent, child: Icon(LucideIcons.arrowUpFromLine, color: Colors.white, size: 16)),
             title: const Text('Highest Single Expense', style: TextStyle(fontSize: 12, color: Colors.grey)),
-            subtitle: Text(highestExpense != null ? '${highestExpense.category} (${NumberFormat.currency(symbol: '\$').format(highestExpense.amount)})' : 'No expenses recorded', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+            subtitle: Text(highestExpense != null ? '${highestExpense.category} (${currencyFormat.format(highestExpense.amount)})' : 'No expenses recorded', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
           ),
           ListTile(
             contentPadding: EdgeInsets.zero,

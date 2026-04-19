@@ -58,4 +58,52 @@ class AppTheme {
       ),
     );
   }
+
+  static ThemeData get lightTheme {
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      primaryColor: primaryColor,
+      scaffoldBackgroundColor: const Color(0xFFF8FAFC),
+      colorScheme: const ColorScheme.light(
+        primary: primaryColor,
+        secondary: secondaryColor,
+        surface: Colors.white,
+        error: errorColor,
+        onPrimary: Colors.white,
+        onSecondary: Colors.white,
+        onSurface: Color(0xFF1E293B), // Dark text on light background
+        onError: Colors.white,
+      ),
+      textTheme: GoogleFonts.interTextTheme(ThemeData.light().textTheme).copyWith(
+        displayLarge: GoogleFonts.inter(color: const Color(0xFF0F172A), fontWeight: FontWeight.bold),
+        displayMedium: GoogleFonts.inter(color: const Color(0xFF0F172A), fontWeight: FontWeight.bold),
+        titleLarge: GoogleFonts.inter(color: const Color(0xFF1E293B), fontWeight: FontWeight.w600),
+        titleMedium: GoogleFonts.inter(color: const Color(0xFF1E293B), fontWeight: FontWeight.w500),
+        bodyLarge: GoogleFonts.inter(color: const Color(0xFF334155)),
+        bodyMedium: GoogleFonts.inter(color: const Color(0xFF64748B)),
+      ),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xFFF8FAFC),
+        elevation: 0,
+        centerTitle: true,
+        iconTheme: IconThemeData(color: Color(0xFF0F172A)),
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: Colors.white,
+        selectedItemColor: primaryColor,
+        unselectedItemColor: Color(0xFF94A3B8),
+        type: BottomNavigationBarType.fixed,
+        elevation: 8,
+      ),
+      cardTheme: CardThemeData(
+        color: Colors.white,
+        elevation: 2,
+        shadowColor: Colors.black12,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+      ),
+    );
+  }
 }

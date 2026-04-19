@@ -8,6 +8,7 @@ import 'dart:math' as math;
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/models/transaction_model.dart';
 import '../../../core/providers/transaction_provider.dart';
+import '../../../core/providers/preferences_provider.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -65,7 +66,8 @@ class _DashboardBalanceCard extends ConsumerWidget {
     final expense = ref.watch(totalExpenseProvider);
     final transactions = ref.watch(transactionProvider);
     final theme = Theme.of(context);
-    final currencyFormat = NumberFormat.currency(symbol: '\$');
+    final currencySymbol = ref.watch(preferencesProvider).currencySymbol;
+    final currencyFormat = NumberFormat.currency(symbol: currencySymbol);
     
     final double rawSavings = (income > 0) ? ((income - expense) / income * 100) : 0;
     final double savingsRate = math.max(0.0, rawSavings);
@@ -306,7 +308,8 @@ class _DashboardMiniTrends extends ConsumerWidget {
       topCategoryStr = "${topCategory.key} is your highest expense this week";
     }
 
-    final currencyFormat = NumberFormat.currency(symbol: '\$');
+    final currencySymbol = ref.watch(preferencesProvider).currencySymbol;
+    final currencyFormat = NumberFormat.currency(symbol: currencySymbol);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -381,7 +384,8 @@ class _DashboardRecentTransactions extends ConsumerWidget {
       );
     }
 
-    final currencyFormat = NumberFormat.currency(symbol: '\$');
+    final currencySymbol = ref.watch(preferencesProvider).currencySymbol;
+    final currencyFormat = NumberFormat.currency(symbol: currencySymbol);
 
     return ListView.builder(
       shrinkWrap: true,

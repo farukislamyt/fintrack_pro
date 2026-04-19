@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../core/providers/transaction_provider.dart';
+import '../../../core/providers/preferences_provider.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -12,7 +13,6 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _notifications = true;
-  bool _darkMode = true;
 
   void _clearData() {
     showDialog(
@@ -42,6 +42,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final prefs = ref.watch(preferencesProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Settings'),
@@ -60,7 +62,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'John Doe',
+                    prefs.userName.isNotEmpty ? prefs.userName : 'User',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   Text(
@@ -76,11 +78,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             context,
             'Preferences',
             [
-              _buildSettingsTile(context, 'Currency', LucideIcons.coins, trailing: const Text('USD (\$)')),
+              _buildSettingsTile(context, 'Currency', LucideIcons.coins, trailing: Text(prefs.currencySymbol)),
               _buildSettingsTile(context, 'Notifications', LucideIcons.bell, 
                 trailing: Switch(value: _notifications, onChanged: (v) => setState(() => _notifications = v))),
               _buildSettingsTile(context, 'Dark Mode', LucideIcons.moon, 
-                trailing: Switch(value: _darkMode, onChanged: (v) => setState(() => _darkMode = v))),
+                trailing: Switch(
+                  value: prefs.themeMode == ThemeMode.dark, 
+                  onChanged: (v) {
+                    ref.read(preferencesProvider.notifier).updateTheme(v ? ThemeMode.dark : ThemeMode.light);
+                  }
+                )),
             ],
           ),
           const SizedBox(height: 24),
