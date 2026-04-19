@@ -6,6 +6,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/models/transaction_model.dart';
 import '../../../core/providers/transaction_provider.dart';
 import '../../../core/providers/preferences_provider.dart';
+import '../../../core/providers/category_provider.dart';
 
 class AddTransactionScreen extends ConsumerStatefulWidget {
   const AddTransactionScreen({super.key});
@@ -19,10 +20,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   final _descriptionController = TextEditingController();
   DateTime _selectedDate = DateTime.now();
   TransactionType _selectedType = TransactionType.expense;
-  String _selectedCategory = 'Food';
-
-  final List<String> _expenseCategories = ['Food', 'Transport', 'Entertainment', 'Shopping', 'Bills', 'Other'];
-  final List<String> _incomeCategories = ['Salary', 'Freelance', 'Investments', 'Gift', 'Other'];
+  String? _selectedCategory;
 
   @override
   void dispose() {
@@ -38,11 +36,16 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     final amount = double.tryParse(amountText);
     if (amount == null || amount <= 0) return;
 
+    if (_selectedCategory == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a category')));
+      return;
+    }
+
     final transaction = TransactionModel(
       amount: amount,
       date: _selectedDate,
       type: _selectedType,
-      category: _selectedCategory,
+      category: _selectedCategory!,
       description: _descriptionController.text,
     );
 
@@ -62,9 +65,46 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
     });
   }
 
+  void _showAddCategoryDialog() {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('New ${_selectedType == TransactionType.income ? 'Income' : 'Expense'} Category'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: 'Category Name'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () {
+              final name = controller.text.trim();
+              if (name.isNotEmpty) {
+                ref.read(categoryProvider.notifier).addCategory(_selectedType, name);
+                setState(() => _selectedCategory = name);
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final currencySymbol = ref.watch(preferencesProvider).currencySymbol;
+    final categories = ref.watch(categoryProvider);
+    final currentCategories = _selectedType == TransactionType.income 
+        ? categories.incomeCategories 
+        : categories.expenseCategories;
+
+    if (_selectedCategory == null || !currentCategories.contains(_selectedCategory)) {
+        _selectedCategory = currentCategories.isNotEmpty ? currentCategories.first : null;
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -92,9 +132,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
               onSelectionChanged: (Set<TransactionType> newSelection) {
                 setState(() {
                   _selectedType = newSelection.first;
-                  _selectedCategory = _selectedType == TransactionType.income 
-                      ? _incomeCategories.first 
-                      : _expenseCategories.first;
+                  _selectedCategory = null; // Re-evaluate in build
                 });
               },
             ).animate().fade().slideY(begin: 0.1, end: 0),
@@ -130,25 +168,37 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   ),
                   const SizedBox(height: 20),
-                  DropdownButtonFormField<String>(
-                    initialValue: _selectedCategory,
-                    decoration: InputDecoration(
-                      labelText: 'Category',
-                      prefixIcon: const Icon(LucideIcons.tag),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          initialValue: _selectedCategory,
+                          decoration: InputDecoration(
+                            labelText: 'Category',
+                            prefixIcon: const Icon(LucideIcons.tag),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
+                            ),
+                          ),
+                          items: currentCategories
+                              .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                              .toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() => _selectedCategory = val);
+                            }
+                          },
+                        ),
                       ),
-                    ),
-                    items: (_selectedType == TransactionType.income ? _incomeCategories : _expenseCategories)
-                        .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                        .toList(),
-                    onChanged: (val) {
-                      if (val != null) {
-                        setState(() => _selectedCategory = val);
-                      }
-                    },
+                      const SizedBox(width: 8),
+                      IconButton.filledTonal(
+                        onPressed: _showAddCategoryDialog,
+                        icon: const Icon(LucideIcons.plus),
+                        tooltip: 'Add New Category',
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 20),
                   InkWell(

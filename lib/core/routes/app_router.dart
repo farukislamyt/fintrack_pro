@@ -7,8 +7,10 @@ import '../../features/reports/screens/reports_screen.dart';
 import '../../features/add_transaction/screens/add_transaction_screen.dart';
 import '../../features/history/screens/history_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
+import '../../features/settings/screens/legal_detail_screen.dart';
 import '../../features/onboarding/screens/onboarding_screen.dart';
 import '../providers/preferences_provider.dart';
+import '../constants/legal_content.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<NavigatorState> _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -77,6 +79,29 @@ final routerProvider = Provider<GoRouter>((ref) {
             pageBuilder: (context, state) => const NoTransitionPage(
                child: SettingsScreen(),
             ),
+            routes: [
+              GoRoute(
+                path: 'privacy',
+                builder: (context, state) => const LegalDetailScreen(
+                  title: 'Privacy Policy',
+                  content: LegalContent.privacyPolicy,
+                ),
+              ),
+              GoRoute(
+                path: 'terms',
+                builder: (context, state) => const LegalDetailScreen(
+                  title: 'Terms & Conditions',
+                  content: LegalContent.termsConditions,
+                ),
+              ),
+              GoRoute(
+                path: 'safety',
+                builder: (context, state) => const LegalDetailScreen(
+                  title: 'Data Safety',
+                  content: LegalContent.dataSafety,
+                ),
+              ),
+            ],
           ),
         ],
       ),

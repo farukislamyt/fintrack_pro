@@ -1,410 +1,201 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import '../../../core/models/transaction_model.dart';
 import '../../../core/providers/transaction_provider.dart';
 import '../../../core/providers/preferences_provider.dart';
-import '../../../core/models/transaction_model.dart';
-import 'package:intl/intl.dart';
+import '../../../core/widgets/premium_empty_state.dart';
 
-class ReportsScreen extends ConsumerWidget {
+class ReportsScreen extends ConsumerStatefulWidget {
   const ReportsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final range = ref.watch(reportDateRangeProvider);
-    final expensesByCategory = ref.watch(reportsExpensesByCategoryProvider);
-    final income = ref.watch(reportsIncomeProvider);
-    final expense = ref.watch(reportsExpenseProvider);
-    final transactions = ref.watch(reportsFilteredTransactionsProvider);
+  ConsumerState<ReportsScreen> createState() => _ReportsScreenState();
+}
+
+class _ReportsScreenState extends ConsumerState<ReportsScreen> {
+  String _timeFilter = 'Monthly';
+
+  @override
+  Widget build(BuildContext context) {
+    final transactions = ref.watch(transactionProvider);
     final currencySymbol = ref.watch(preferencesProvider).currencySymbol;
     final currencyFormat = NumberFormat.currency(symbol: currencySymbol);
 
-    final netCashflow = income - expense;
+    final filteredTransactions = _filterTransactions(transactions, _timeFilter);
+    final categoryTotals = _calculateCategoryTotals(filteredTransactions);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Reports'),
+        title: const Text('Financial Reports'),
+        actions: [
+          PopupMenuButton<String>(
+            initialValue: _timeFilter,
+            onSelected: (val) {
+              HapticFeedback.selectionClick();
+              setState(() => _timeFilter = val);
+            },
+            icon: const Icon(LucideIcons.filter),
+            itemBuilder: (context) => ['Weekly', 'Monthly', 'Yearly', 'All Time']
+                .map((filter) => PopupMenuItem(value: filter, child: Text(filter)))
+                .toList(),
+          ),
+        ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Time Filter Row
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-              child: Row(
-                children: [
-                  _buildFilterChip(context, ref, 'All Time', ReportTimeRange.allTime, range == ReportTimeRange.allTime),
-                  _buildFilterChip(context, ref, 'This Month', ReportTimeRange.monthly, range == ReportTimeRange.monthly),
-                  _buildFilterChip(context, ref, 'This Week', ReportTimeRange.weekly, range == ReportTimeRange.weekly),
-                  _buildFilterChip(context, ref, 'Today', ReportTimeRange.daily, range == ReportTimeRange.daily),
-                ],
-              ),
-            ).animate().fade(duration: 500.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
-            
-            // Core Summary Row
-            Padding(
+      body: filteredTransactions.isEmpty
+          ? PremiumEmptyState(
+              icon: LucideIcons.pieChart,
+              title: 'Not Enough Data',
+              subtitle: 'Add more transactions to generate your visual financial insights.',
+            )
+          : SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSummaryMiniCard(context, 'Income', currencyFormat.format(income), Colors.green),
-                  _buildSummaryMiniCard(context, 'Expenses', currencyFormat.format(expense), Colors.red),
-                  _buildSummaryMiniCard(
-                    context, 
-                    'Net Cashflow', 
-                    currencyFormat.format(netCashflow), 
-                    netCashflow >= 0 ? Theme.of(context).primaryColor : Colors.red
-                  ),
+                   _buildSummarySection(filteredTransactions, currencyFormat),
+                  const SizedBox(height: 24),
+                  Text('Category Breakdown', style: Theme.of(context).textTheme.titleLarge),
+                  const SizedBox(height: 16),
+                  _buildPieChart(categoryTotals),
+                  const SizedBox(height: 32),
+                  Text('Top Expenses', style: Theme.of(context).textTheme.titleLarge),
+                  const SizedBox(height: 16),
+                  _buildCategoryList(categoryTotals, currencyFormat),
                 ],
               ),
             ),
-
-            if (transactions.isEmpty)
-              const Padding(
-                padding: EdgeInsets.all(32.0),
-                child: Center(child: Text("No transactions recorded in this period.", style: TextStyle(color: Colors.grey))),
-              )
-            else ...[
-              // Line Chart (Trend Analysis - Overlapping Income vs Expense)
-              _buildChartContainer(
-                context, 
-                'Trend Analysis', 
-                SizedBox(
-                  height: 220,
-                  child: _buildLineChart(context, transactions),
-                )
-              ).animate().fade(duration: 500.ms, delay: 100.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
-
-              // Bar Chart (Income vs Expense)
-              _buildChartContainer(
-                context, 
-                'Income vs Expense', 
-                SizedBox(
-                  height: 200,
-                  child: _buildBarChart(context, income, expense),
-                )
-              ).animate().fade(duration: 500.ms, delay: 200.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
-
-              // Pie Chart (Category Breakdown)
-              _buildChartContainer(
-                context, 
-                'Expense Distribution', 
-                Column(
-                  children: [
-                    if (expensesByCategory.isEmpty)
-                      const Text('No expenses to distribute.', style: TextStyle(color: Colors.grey))
-                    else ...[
-                      SizedBox(
-                        height: 200,
-                        child: PieChart(
-                          PieChartData(
-                            sectionsSpace: 2,
-                            centerSpaceRadius: 50,
-                            sections: _buildPieSections(context, expensesByCategory),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      _buildLegend(context, expensesByCategory, currencyFormat),
-                    ]
-                  ],
-                ),
-              ).animate().fade(duration: 500.ms, delay: 300.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
-
-              // Insights Panel
-              _buildInsightsPanel(context, transactions, expensesByCategory, currencyFormat)
-                  .animate().fade(duration: 500.ms, delay: 400.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
-              const SizedBox(height: 32),
-            ],
-          ],
-        ),
-      ),
     );
   }
 
-  Widget _buildFilterChip(BuildContext context, WidgetRef ref, String label, ReportTimeRange value, bool isSelected) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 8.0),
-      child: FilterChip(
-        label: Text(label),
-        selected: isSelected,
-        onSelected: (_) {
-          ref.read(reportDateRangeProvider.notifier).updateRange(value);
-        },
-        selectedColor: Theme.of(context).primaryColor.withValues(alpha: 0.2),
-        checkmarkColor: Theme.of(context).primaryColor,
-        labelStyle: TextStyle(
-          color: isSelected ? Theme.of(context).primaryColor : Theme.of(context).textTheme.bodyMedium?.color,
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-        ),
-      ),
-    );
+  Widget _buildSummarySection(List<TransactionModel> transactions, NumberFormat format) {
+    double totalIncome = 0;
+    double totalExpense = 0;
+
+    for (var tx in transactions) {
+      if (tx.type == TransactionType.income) {
+        totalIncome += tx.amount;
+      } else {
+        totalExpense += tx.amount;
+      }
+    }
+
+    return Row(
+      children: [
+        Expanded(child: _SummaryCard(label: 'Income', amount: format.format(totalIncome), color: Colors.green, icon: LucideIcons.trendingUp)),
+        const SizedBox(width: 16),
+        Expanded(child: _SummaryCard(label: 'Expense', amount: format.format(totalExpense), color: Colors.orange, icon: LucideIcons.trendingDown)),
+      ],
+    ).animate().fade().slideY(begin: 0.1, end: 0);
   }
 
-  Widget _buildSummaryMiniCard(BuildContext context, String title, String value, Color color) {
-    return Expanded(
-      child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 8.0),
-          child: Column(
-            children: [
-              Text(title, style: Theme.of(context).textTheme.bodySmall),
-              const SizedBox(height: 8),
-              Text(
-                value, 
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 4),
-              Container(
-                width: 20,
-                height: 4,
-                decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2)),
-              )
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  Widget _buildPieChart(Map<String, double> categoryTotals) {
+    if (categoryTotals.isEmpty) return const SizedBox();
 
-  Widget _buildChartContainer(BuildContext context, String title, Widget child) {
+    final List<PieChartSectionData> sections = [];
+    int i = 0;
+    final colors = [Colors.indigo, Colors.green, Colors.orange, Colors.pink, Colors.cyan, Colors.purple];
+
+    categoryTotals.forEach((category, amount) {
+      sections.add(PieChartSectionData(
+        value: amount,
+        title: '',
+        radius: 50,
+        color: colors[i % colors.length],
+      ));
+      i++;
+    });
+
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      padding: const EdgeInsets.all(24),
+      height: 200,
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(24),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            title,
-            style: Theme.of(context).textTheme.titleLarge,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 32),
-          child,
-        ],
-      ),
+      child: PieChart(
+        PieChartData(
+          sections: sections,
+          sectionsSpace: 4,
+          centerSpaceRadius: 40,
+        ),
+      ).animate().scale(duration: 600.ms, curve: Curves.easeOutBack),
     );
   }
 
-  Widget _buildLineChart(BuildContext context, List<TransactionModel> transactions) {
-    // Reverse so chronologically oldest is first
-    final chronoSorted = transactions.toList().reversed.toList();
-    
-    List<FlSpot> incomeSpots = [];
-    List<FlSpot> expenseSpots = [];
-    
-    // Group roughly by index (representing time progression)
-    // For a real production app, we would group by Date
-    for (int i = 0; i < chronoSorted.length; i++) {
-      final tx = chronoSorted[i];
-      if (tx.type == TransactionType.income) {
-        incomeSpots.add(FlSpot(i.toDouble(), tx.amount));
-        expenseSpots.add(FlSpot(i.toDouble(), 0)); // Padding
-      } else {
-        expenseSpots.add(FlSpot(i.toDouble(), tx.amount));
-        incomeSpots.add(FlSpot(i.toDouble(), 0)); // Padding
-      }
-    }
+  Widget _buildCategoryList(Map<String, double> categoryTotals, NumberFormat format) {
+    final sorted = categoryTotals.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
 
-    if (incomeSpots.length == 1) incomeSpots.add(FlSpot(1, incomeSpots.first.y));
-    if (expenseSpots.length == 1) expenseSpots.add(FlSpot(1, expenseSpots.first.y));
-
-    return LineChart(
-      LineChartData(
-        gridData: FlGridData(
-          show: true, 
-          drawVerticalLine: false,
-          getDrawingHorizontalLine: (value) => FlLine(color: Theme.of(context).dividerColor.withValues(alpha: 0.1), strokeWidth: 1),
-        ),
-        titlesData: FlTitlesData(
-          show: true,
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          bottomTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          leftTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              reservedSize: 40,
-              getTitlesWidget: (value, meta) {
-                if (value == 0) return const SizedBox();
-                return Text(NumberFormat.compact().format(value), style: const TextStyle(fontSize: 10, color: Colors.grey));
-              },
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: sorted.length,
+      itemBuilder: (context, index) {
+        final entry = sorted[index];
+        return ListTile(
+          leading: Container(
+            width: 12, height: 12,
+            decoration: BoxDecoration(
+              color: [Colors.indigo, Colors.green, Colors.orange, Colors.pink, Colors.cyan, Colors.purple][index % 6],
+              shape: BoxShape.circle,
             ),
           ),
-        ),
-        borderData: FlBorderData(show: false),
-        lineBarsData: [
-          LineChartBarData(
-            spots: incomeSpots,
-            isCurved: true,
-            color: Colors.green,
-            barWidth: 3,
-            isStrokeCapRound: true,
-            dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(
-              show: true,
-              color: Colors.green.withValues(alpha: 0.1),
-            ),
-          ),
-          LineChartBarData(
-            spots: expenseSpots,
-            isCurved: true,
-            color: Colors.red,
-            barWidth: 3,
-            isStrokeCapRound: true,
-            dotData: const FlDotData(show: false),
-            belowBarData: BarAreaData(
-              show: true,
-              color: Colors.red.withValues(alpha: 0.1),
-            ),
-          ),
-        ],
-      ),
+          title: Text(entry.key),
+          trailing: Text(format.format(entry.value), style: const TextStyle(fontWeight: FontWeight.bold)),
+        );
+      },
     );
   }
 
-  Widget _buildBarChart(BuildContext context, double income, double expense) {
-    return BarChart(
-      BarChartData(
-        alignment: BarChartAlignment.spaceAround,
-        maxY: (income > expense ? income : expense) * 1.2,
-        barTouchData: BarTouchData(enabled: false),
-        titlesData: FlTitlesData(
-          show: true,
-          bottomTitles: AxisTitles(
-            sideTitles: SideTitles(
-              showTitles: true,
-              getTitlesWidget: (double value, TitleMeta meta) {
-                switch (value.toInt()) {
-                  case 0:
-                    return const Text('Income', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold));
-                  case 1:
-                    return const Text('Expense', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold));
-                  default:
-                    return const Text('');
-                }
-              },
-            ),
-          ),
-          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-        ),
-        gridData: const FlGridData(show: false),
-        borderData: FlBorderData(show: false),
-        barGroups: [
-          BarChartGroupData(
-            x: 0,
-            barRods: [BarChartRodData(toY: income, color: Colors.green, width: 40, borderRadius: BorderRadius.circular(4))],
-          ),
-          BarChartGroupData(
-            x: 1,
-            barRods: [BarChartRodData(toY: expense, color: Colors.red, width: 40, borderRadius: BorderRadius.circular(4))],
-          ),
-        ],
-      ),
-    );
-  }
-
-  List<PieChartSectionData> _buildPieSections(BuildContext context, Map<String, double> data) {
-    final total = data.values.fold(0.0, (s, e) => s + e);
-    final colors = [Colors.blue, Colors.redAccent, Colors.green, Colors.orange, Colors.purple, Colors.teal];
-    int colorIndex = 0;
-
-    return data.entries.map((entry) {
-      final percentage = (entry.value / total) * 100;
-      final section = PieChartSectionData(
-        color: colors[colorIndex % colors.length],
-        value: entry.value,
-        title: '${percentage.toStringAsFixed(0)}%',
-        radius: 40,
-        titleStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.white),
-      );
-      colorIndex++;
-      return section;
+  List<TransactionModel> _filterTransactions(List<TransactionModel> transactions, String filter) {
+    final now = DateTime.now();
+    return transactions.where((tx) {
+      if (filter == 'Weekly') return tx.date.isAfter(now.subtract(const Duration(days: 7)));
+      if (filter == 'Monthly') return tx.date.month == now.month && tx.date.year == now.year;
+      if (filter == 'Yearly') return tx.date.year == now.year;
+      return true;
     }).toList();
   }
 
-  Widget _buildLegend(BuildContext context, Map<String, double> data, NumberFormat currencyFormat) {
-    final colors = [Colors.blue, Colors.redAccent, Colors.green, Colors.orange, Colors.purple, Colors.teal];
-    int colorIndex = 0;
-
-    return Column(
-      children: data.entries.map((entry) {
-        final color = colors[colorIndex % colors.length];
-        colorIndex++;
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4.0),
-          child: Row(
-            children: [
-              Container(width: 12, height: 12, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-              const SizedBox(width: 12),
-              Expanded(child: Text(entry.key, style: Theme.of(context).textTheme.bodyMedium)),
-              Text(currencyFormat.format(entry.value), style: const TextStyle(fontWeight: FontWeight.bold)),
-            ],
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildInsightsPanel(BuildContext context, List<TransactionModel> transactions, Map<String, double> expensesByCategory, NumberFormat currencyFormat) {
-    TransactionModel? highestExpense;
+  Map<String, double> _calculateCategoryTotals(List<TransactionModel> transactions) {
+    final Map<String, double> totals = {};
     for (var tx in transactions) {
       if (tx.type == TransactionType.expense) {
-        if (highestExpense == null || tx.amount > highestExpense.amount) {
-          highestExpense = tx;
-        }
+        totals[tx.category] = (totals[tx.category] ?? 0) + tx.amount;
       }
     }
+    return totals;
+  }
+}
 
-    String topCategory = "N/A";
-    if (expensesByCategory.isNotEmpty) {
-      topCategory = expensesByCategory.entries.first.key; // Sorted in provider
-    }
+class _SummaryCard extends StatelessWidget {
+  final String label;
+  final String amount;
+  final Color color;
+  final IconData icon;
 
+  const _SummaryCard({required this.label, required this.amount, required this.color, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+        color: Theme.of(context).cardTheme.color,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Theme.of(context).primaryColor.withValues(alpha: 0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(LucideIcons.lightbulb, color: Theme.of(context).primaryColor),
-              const SizedBox(width: 8),
-              Text('Actionable Insights', style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Theme.of(context).primaryColor)),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const CircleAvatar(backgroundColor: Colors.redAccent, child: Icon(LucideIcons.arrowUpFromLine, color: Colors.white, size: 16)),
-            title: const Text('Highest Single Expense', style: TextStyle(fontSize: 12, color: Colors.grey)),
-            subtitle: Text(highestExpense != null ? '${highestExpense.category} (${currencyFormat.format(highestExpense.amount)})' : 'No expenses recorded', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-          ),
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const CircleAvatar(backgroundColor: Colors.orange, child: Icon(LucideIcons.pieChart, color: Colors.white, size: 16)),
-            title: const Text('Most Frequent Spending Category', style: TextStyle(fontSize: 12, color: Colors.grey)),
-            subtitle: Text(topCategory, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-          ),
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 12),
+          Text(label, style: Theme.of(context).textTheme.bodySmall),
+          const SizedBox(height: 4),
+          FittedBox(child: Text(amount, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
         ],
       ),
     );

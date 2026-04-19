@@ -47,7 +47,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     final int currentIndex = _calculateSelectedIndex(context);
 
     return Scaffold(
-      body: widget.child,
+      body: AnimatedSwitcher(
+        duration: const Duration(milliseconds: 300),
+        child: KeyedSubtree(
+          key: ValueKey(currentIndex),
+          child: widget.child,
+        ),
+      ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
@@ -58,21 +64,21 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             ),
           ],
         ),
-        child: BottomNavigationBar(
-          showSelectedLabels: false,
-          showUnselectedLabels: false,
-          currentIndex: currentIndex,
-          onTap: (index) => _onItemTapped(index, context),
-          items: [
-            const BottomNavigationBarItem(
+        child: NavigationBar(
+          selectedIndex: currentIndex,
+          onDestinationSelected: (index) => _onItemTapped(index, context),
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
+          height: 70,
+          destinations: [
+            const NavigationDestination(
               icon: Icon(LucideIcons.layoutDashboard),
               label: 'Dashboard',
             ),
-            const BottomNavigationBarItem(
+            const NavigationDestination(
               icon: Icon(LucideIcons.pieChart),
               label: 'Reports',
             ),
-            BottomNavigationBarItem(
+            NavigationDestination(
               icon: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
@@ -92,13 +98,13 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   size: 24,
                 ),
               ),
-              label: '',
+              label: 'Add',
             ),
-            const BottomNavigationBarItem(
+            const NavigationDestination(
               icon: Icon(LucideIcons.history),
               label: 'History',
             ),
-            const BottomNavigationBarItem(
+            const NavigationDestination(
               icon: Icon(LucideIcons.settings),
               label: 'Settings',
             ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
@@ -9,12 +10,15 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/models/transaction_model.dart';
 import '../../../core/providers/transaction_provider.dart';
 import '../../../core/providers/preferences_provider.dart';
+import '../../../core/widgets/premium_empty_state.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final transactions = ref.watch(transactionProvider);
+
     return Scaffold(
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
@@ -25,31 +29,48 @@ class DashboardScreen extends ConsumerWidget {
             pinned: true,
             scrolledUnderElevation: 8,
             flexibleSpace: FlexibleSpaceBar(
-              title: Text('Dashboard', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, fontSize: 24)),
+              title: Text('Dashboard', 
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold, 
+                  fontSize: 24,
+                ),
+              ),
               centerTitle: false,
               titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
             ),
-            actions: [
-              IconButton(icon: const Icon(LucideIcons.bell), onPressed: () {}),
-            ],
           ),
-          SliverPadding(
-            padding: const EdgeInsets.all(16.0),
-            sliver: SliverList(
-              delegate: SliverChildListDelegate([
-                const _DashboardBalanceCard().animate().fade(duration: 500.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
-                const SizedBox(height: 24),
-                const _DashboardQuickActions().animate().fade(duration: 500.ms, delay: 100.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
-                const SizedBox(height: 24),
-                const _DashboardMiniTrends().animate().fade(duration: 500.ms, delay: 200.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
-                const SizedBox(height: 24),
-                Text('Recent Transactions', style: Theme.of(context).textTheme.titleLarge).animate().fade(duration: 500.ms, delay: 300.ms),
-                const SizedBox(height: 16),
-                const _DashboardRecentTransactions().animate().fade(duration: 500.ms, delay: 400.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
-                const SizedBox(height: 32),
-              ]),
+          if (transactions.isEmpty)
+             SliverFillRemaining(
+              hasScrollBody: false,
+              child: PremiumEmptyState(
+                icon: LucideIcons.layoutDashboard,
+                title: 'Welcome to FinTrack Pro',
+                subtitle: 'Your dashboard is empty. Add your first income or expense to see your financial health overview.',
+                actionLabel: 'Add Transaction',
+                onAction: () {
+                  HapticFeedback.lightImpact();
+                  context.go('/add_transaction');
+                },
+              ),
+            )
+          else
+            SliverPadding(
+              padding: const EdgeInsets.all(16.0),
+              sliver: SliverList(
+                delegate: SliverChildListDelegate([
+                  const _DashboardBalanceCard().animate().fade(duration: 500.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
+                  const SizedBox(height: 24),
+                  const _DashboardQuickActions().animate().fade(duration: 500.ms, delay: 100.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
+                  const SizedBox(height: 24),
+                  const _DashboardMiniTrends().animate().fade(duration: 500.ms, delay: 200.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
+                  const SizedBox(height: 24),
+                  Text('Recent Transactions', style: Theme.of(context).textTheme.titleLarge).animate().fade(duration: 500.ms, delay: 300.ms),
+                  const SizedBox(height: 16),
+                  const _DashboardRecentTransactions().animate().fade(duration: 500.ms, delay: 400.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
+                  const SizedBox(height: 32),
+                ]),
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -239,9 +260,18 @@ class _DashboardQuickActions extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _ActionButton(title: 'Add New', icon: LucideIcons.plus, onTap: () => context.go('/add_transaction')),
-        _ActionButton(title: 'Reports', icon: LucideIcons.pieChart, onTap: () => context.go('/reports')),
-        _ActionButton(title: 'History', icon: LucideIcons.history, onTap: () => context.go('/history')),
+        _ActionButton(title: 'Add New', icon: LucideIcons.plus, onTap: () {
+          HapticFeedback.lightImpact();
+          context.go('/add_transaction');
+        }),
+        _ActionButton(title: 'Reports', icon: LucideIcons.pieChart, onTap: () {
+          HapticFeedback.lightImpact();
+          context.go('/reports');
+        }),
+        _ActionButton(title: 'History', icon: LucideIcons.history, onTap: () {
+          HapticFeedback.lightImpact();
+          context.go('/history');
+        }),
       ],
     );
   }
@@ -312,59 +342,90 @@ class _DashboardMiniTrends extends ConsumerWidget {
     final currencyFormat = NumberFormat.currency(symbol: currencySymbol);
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: Theme.of(context).dividerColor.withValues(alpha: 0.05)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.02),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(LucideIcons.trendingDown, size: 20, color: Colors.orange),
-              const SizedBox(width: 8),
-              Text('Quick Stats', style: Theme.of(context).textTheme.titleMedium),
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: Colors.orange.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(LucideIcons.trendingDown, size: 16, color: Colors.orange),
+              ),
+              const SizedBox(width: 12),
+              Text('Quick Stats', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 20),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Today', style: Theme.of(context).textTheme.bodySmall),
-                  Text(currencyFormat.format(todayExpense), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('This Week', style: Theme.of(context).textTheme.bodySmall),
-                  Text(currencyFormat.format(weekExpense), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                ],
-              ),
+              _TrendItem(label: 'Today', amount: currencyFormat.format(todayExpense)),
+              const Spacer(),
+              _TrendItem(label: 'Weekly', amount: currencyFormat.format(weekExpense)),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor.withValues(alpha: 0.05),
-              borderRadius: BorderRadius.circular(8),
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.04),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Theme.of(context).primaryColor.withValues(alpha: 0.05)),
             ),
             child: Row(
               children: [
-                Icon(LucideIcons.lightbulb, size: 16, color: Theme.of(context).primaryColor),
-                const SizedBox(width: 8),
-                Expanded(child: Text(topCategoryStr, style: TextStyle(fontSize: 12, color: Theme.of(context).primaryColor))),
+                Icon(LucideIcons.sparkles, size: 16, color: Theme.of(context).primaryColor),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    topCategoryStr,
+                    style: TextStyle(
+                      fontSize: 13, 
+                      color: Theme.of(context).primaryColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
               ],
             ),
           )
         ],
       ),
+    );
+  }
+}
+
+class _TrendItem extends StatelessWidget {
+  final String label;
+  final String amount;
+
+  const _TrendItem({required this.label, required this.amount});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey)),
+        const SizedBox(height: 4),
+        Text(amount, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+      ],
     );
   }
 }
@@ -375,15 +436,7 @@ class _DashboardRecentTransactions extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final transactions = ref.watch(transactionProvider).take(5).toList();
-    if (transactions.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(32.0),
-          child: Text('No recent transactions.'),
-        ),
-      );
-    }
-
+    
     final currencySymbol = ref.watch(preferencesProvider).currencySymbol;
     final currencyFormat = NumberFormat.currency(symbol: currencySymbol);
 
@@ -400,6 +453,7 @@ class _DashboardRecentTransactions extends ConsumerWidget {
           margin: const EdgeInsets.only(bottom: 12),
           clipBehavior: Clip.antiAlias,
           child: ListTile(
+            onTap: () => HapticFeedback.selectionClick(),
             leading: Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
@@ -411,9 +465,10 @@ class _DashboardRecentTransactions extends ConsumerWidget {
               child: Icon(
                 isIncome ? LucideIcons.arrowDownToLine : LucideIcons.arrowUpFromLine,
                 color: isIncome ? Theme.of(context).colorScheme.secondary : Theme.of(context).colorScheme.error,
+                size: 20,
               ),
             ),
-            title: Text(tx.category),
+            title: Text(tx.category, style: const TextStyle(fontWeight: FontWeight.w600)),
             subtitle: Text(DateFormat.MMMd().format(tx.date)),
             trailing: Text(
               '${isIncome ? '+' : '-'}${currencyFormat.format(tx.amount)}',
