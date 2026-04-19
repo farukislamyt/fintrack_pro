@@ -5,6 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'dart:math' as math;
+import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/models/transaction_model.dart';
 import '../../../core/providers/transaction_provider.dart';
 
@@ -13,46 +14,56 @@ class DashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    return Scaffold(
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 120,
+            floating: false,
+            pinned: true,
+            scrolledUnderElevation: 8,
+            flexibleSpace: FlexibleSpaceBar(
+              title: Text('Dashboard', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold, fontSize: 24)),
+              centerTitle: false,
+              titlePadding: const EdgeInsets.only(left: 16, bottom: 16),
+            ),
+            actions: [
+              IconButton(icon: const Icon(LucideIcons.bell), onPressed: () {}),
+            ],
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.all(16.0),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                const _DashboardBalanceCard().animate().fade(duration: 500.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
+                const SizedBox(height: 24),
+                const _DashboardQuickActions().animate().fade(duration: 500.ms, delay: 100.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
+                const SizedBox(height: 24),
+                const _DashboardMiniTrends().animate().fade(duration: 500.ms, delay: 200.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
+                const SizedBox(height: 24),
+                Text('Recent Transactions', style: Theme.of(context).textTheme.titleLarge).animate().fade(duration: 500.ms, delay: 300.ms),
+                const SizedBox(height: 16),
+                const _DashboardRecentTransactions().animate().fade(duration: 500.ms, delay: 400.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
+                const SizedBox(height: 32),
+              ]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DashboardBalanceCard extends ConsumerWidget {
+  const _DashboardBalanceCard();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final balance = ref.watch(totalBalanceProvider);
     final income = ref.watch(totalIncomeProvider);
     final expense = ref.watch(totalExpenseProvider);
     final transactions = ref.watch(transactionProvider);
-    final recentTransactions = transactions.take(5).toList();
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Dashboard'),
-        actions: [
-          IconButton(
-            icon: const Icon(LucideIcons.bell),
-            onPressed: () {},
-          )
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildBalanceCard(context, balance, income, expense, transactions),
-            const SizedBox(height: 24),
-            _buildQuickActions(context),
-            const SizedBox(height: 24),
-            _buildMiniTrends(context, transactions),
-            const SizedBox(height: 24),
-            Text(
-              'Recent Transactions',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 16),
-            _buildTransactionList(context, recentTransactions),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildBalanceCard(BuildContext context, double balance, double income, double expense, List<TransactionModel> transactions) {
     final theme = Theme.of(context);
     final currencyFormat = NumberFormat.currency(symbol: '\$');
     
@@ -62,13 +73,20 @@ class DashboardScreen extends ConsumerWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: theme.primaryColor,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            theme.primaryColor,
+            theme.primaryColor.withValues(alpha: 0.7),
+          ],
+        ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
             color: theme.primaryColor.withValues(alpha: 0.4),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
+            blurRadius: 16,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -83,9 +101,7 @@ class DashboardScreen extends ConsumerWidget {
               child: Opacity(
                 opacity: 0.3,
                 child: IgnorePointer(
-                  child: LineChart(
-                    _buildSparklineData(transactions),
-                  ),
+                  child: LineChart(_buildSparklineData(transactions)),
                 ),
               ),
             ),
@@ -100,9 +116,7 @@ class DashboardScreen extends ConsumerWidget {
                   children: [
                     Text(
                       'Total Balance',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.white70,
-                      ),
+                      style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white70),
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -120,16 +134,14 @@ class DashboardScreen extends ConsumerWidget {
                 const SizedBox(height: 8),
                 Text(
                   currencyFormat.format(balance),
-                  style: theme.textTheme.displayMedium?.copyWith(
-                    color: Colors.white,
-                  ),
+                  style: theme.textTheme.displayMedium?.copyWith(color: Colors.white),
                 ),
                 const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildIncomeExpenseStat(context, 'Income', currencyFormat.format(income), LucideIcons.arrowDownToLine, theme.colorScheme.secondary),
-                    _buildIncomeExpenseStat(context, 'Expense', currencyFormat.format(expense), LucideIcons.arrowUpFromLine, const Color(0xFFFFA500)),
+                    _IncomeExpenseStat(label: 'Income', amount: currencyFormat.format(income), icon: LucideIcons.arrowDownToLine, color: theme.colorScheme.secondary),
+                    _IncomeExpenseStat(label: 'Expense', amount: currencyFormat.format(expense), icon: LucideIcons.arrowUpFromLine, color: const Color(0xFFFFA500)),
                   ],
                 ),
               ],
@@ -155,9 +167,7 @@ class DashboardScreen extends ConsumerWidget {
       spots.add(FlSpot(i.toDouble(), runningNet));
     }
 
-    if (spots.length == 1) {
-      spots.add(FlSpot(1, spots.first.y));
-    }
+    if (spots.length == 1) spots.add(FlSpot(1, spots.first.y));
 
     return LineChartData(
       gridData: const FlGridData(show: false),
@@ -179,8 +189,23 @@ class DashboardScreen extends ConsumerWidget {
       ],
     );
   }
+}
 
-  Widget _buildIncomeExpenseStat(BuildContext context, String label, String amount, IconData icon, Color color) {
+class _IncomeExpenseStat extends StatelessWidget {
+  final String label;
+  final String amount;
+  final IconData icon;
+  final Color color;
+
+  const _IncomeExpenseStat({
+    required this.label,
+    required this.amount,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       children: [
         Container(
@@ -195,34 +220,43 @@ class DashboardScreen extends ConsumerWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white70),
-            ),
-            Text(
-              amount,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white),
-            ),
+            Text(label, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white70)),
+            Text(amount, style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white)),
           ],
         ),
       ],
     );
   }
+}
 
-  Widget _buildQuickActions(BuildContext context) {
+class _DashboardQuickActions extends StatelessWidget {
+  const _DashboardQuickActions();
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _buildActionButton(context, 'Add New', LucideIcons.plus, () => context.go('/add_transaction')),
-        _buildActionButton(context, 'Reports', LucideIcons.pieChart, () => context.go('/reports')),
-        _buildActionButton(context, 'History', LucideIcons.history, () => context.go('/history')),
+        _ActionButton(title: 'Add New', icon: LucideIcons.plus, onTap: () => context.go('/add_transaction')),
+        _ActionButton(title: 'Reports', icon: LucideIcons.pieChart, onTap: () => context.go('/reports')),
+        _ActionButton(title: 'History', icon: LucideIcons.history, onTap: () => context.go('/history')),
       ],
     );
   }
+}
 
-  Widget _buildActionButton(BuildContext context, String title, IconData icon, VoidCallback onTap) {
+class _ActionButton extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _ActionButton({required this.title, required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: Column(
         children: [
           Container(
@@ -239,8 +273,14 @@ class DashboardScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _buildMiniTrends(BuildContext context, List<TransactionModel> transactions) {
+class _DashboardMiniTrends extends ConsumerWidget {
+  const _DashboardMiniTrends();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final transactions = ref.watch(transactionProvider);
     final now = DateTime.now();
     double todayExpense = 0;
     double weekExpense = 0;
@@ -307,7 +347,7 @@ class DashboardScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 12),
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: Theme.of(context).primaryColor.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(8),
@@ -324,8 +364,14 @@ class DashboardScreen extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Widget _buildTransactionList(BuildContext context, List<TransactionModel> transactions) {
+class _DashboardRecentTransactions extends ConsumerWidget {
+  const _DashboardRecentTransactions();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final transactions = ref.watch(transactionProvider).take(5).toList();
     if (transactions.isEmpty) {
       return const Center(
         child: Padding(
@@ -340,6 +386,7 @@ class DashboardScreen extends ConsumerWidget {
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.zero,
       itemCount: transactions.length,
       itemBuilder: (context, index) {
         final tx = transactions[index];
@@ -347,6 +394,7 @@ class DashboardScreen extends ConsumerWidget {
         
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
+          clipBehavior: Clip.antiAlias,
           child: ListTile(
             leading: Container(
               padding: const EdgeInsets.all(10),
@@ -371,7 +419,7 @@ class DashboardScreen extends ConsumerWidget {
               ),
             ),
           ),
-        );
+        ).animate().fade(duration: 500.ms, delay: (100 * index).ms).slideX(begin: 0.1, end: 0, curve: Curves.easeOutQuad);
       },
     );
   }

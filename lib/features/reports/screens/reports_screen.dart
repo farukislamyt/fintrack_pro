@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../core/providers/transaction_provider.dart';
 import '../../../core/models/transaction_model.dart';
@@ -40,7 +41,7 @@ class ReportsScreen extends ConsumerWidget {
                   _buildFilterChip(context, ref, 'Today', ReportTimeRange.daily, range == ReportTimeRange.daily),
                 ],
               ),
-            ),
+            ).animate().fade(duration: 500.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
             
             // Core Summary Row
             Padding(
@@ -74,7 +75,7 @@ class ReportsScreen extends ConsumerWidget {
                   height: 220,
                   child: _buildLineChart(context, transactions),
                 )
-              ),
+              ).animate().fade(duration: 500.ms, delay: 100.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
 
               // Bar Chart (Income vs Expense)
               _buildChartContainer(
@@ -84,7 +85,7 @@ class ReportsScreen extends ConsumerWidget {
                   height: 200,
                   child: _buildBarChart(context, income, expense),
                 )
-              ),
+              ).animate().fade(duration: 500.ms, delay: 200.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
 
               // Pie Chart (Category Breakdown)
               _buildChartContainer(
@@ -110,10 +111,11 @@ class ReportsScreen extends ConsumerWidget {
                     ]
                   ],
                 ),
-              ),
+              ).animate().fade(duration: 500.ms, delay: 300.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
 
               // Insights Panel
-              _buildInsightsPanel(context, transactions, expensesByCategory),
+              _buildInsightsPanel(context, transactions, expensesByCategory)
+                  .animate().fade(duration: 500.ms, delay: 400.ms).slideY(begin: 0.1, end: 0, curve: Curves.easeOutQuad),
               const SizedBox(height: 32),
             ],
           ],
