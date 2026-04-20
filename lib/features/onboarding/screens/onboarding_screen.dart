@@ -18,16 +18,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final TextEditingController _nameController = TextEditingController();
   
   String _selectedCurrency = '\$';
-  ThemeMode _selectedTheme = ThemeMode.dark;
   int _currentPage = 0;
   
   final List<Map<String, String>> _currencies = [
     {'symbol': '\$', 'name': 'USD', 'flag': '🇺🇸'},
     {'symbol': '€', 'name': 'EUR', 'flag': '🇪🇺'},
     {'symbol': '£', 'name': 'GBP', 'flag': '🇬🇧'},
+    {'symbol': '৳', 'name': 'BDT', 'flag': '🇧🇩'},
     {'symbol': '₹', 'name': 'INR', 'flag': '🇮🇳'},
     {'symbol': '¥', 'name': 'JPY', 'flag': '🇯🇵'},
-    {'symbol': '৳', 'name': 'BDT', 'flag': '🇧🇩'},
   ];
 
   @override
@@ -40,19 +39,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   void _nextPage() {
     HapticFeedback.mediumImpact();
     
-    if (_currentPage == 1 && _nameController.text.trim().isEmpty) {
+    if (_currentPage == 0 && _nameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: const Text('We need to know what to call you!'),
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         )
       );
       return;
     }
     
-    if (_currentPage < 3) {
-      _pageController.nextPage(duration: 600.ms, curve: Curves.easeOutQuart);
+    if (_currentPage < 1) {
+      _pageController.nextPage(duration: 500.ms, curve: Curves.easeOutQuart);
     } else {
       _finishOnboarding();
     }
@@ -63,7 +61,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     ref.read(preferencesProvider.notifier).completeOnboarding(
       _nameController.text.trim(),
       _selectedCurrency,
-      _selectedTheme,
     );
   }
 
@@ -72,7 +69,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Background Gradient base
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -96,10 +92,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     physics: const NeverScrollableScrollPhysics(),
                     onPageChanged: (idx) => setState(() => _currentPage = idx),
                     children: [
-                      _buildWelcomeStep(),
-                      _buildNameStep(),
+                      _buildWelcomeAndNameStep(),
                       _buildCurrencyStep(),
-                      _buildThemeStep(),
                     ],
                   ),
                 ),
@@ -121,11 +115,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           _currentPage > 0 
               ? IconButton(
                   icon: const Icon(LucideIcons.arrowLeft, size: 20),
-                  onPressed: () => _pageController.previousPage(duration: 500.ms, curve: Curves.easeOut),
+                  onPressed: () => _pageController.previousPage(duration: 400.ms, curve: Curves.easeOut),
                 )
               : const SizedBox(width: 48),
           Row(
-            children: List.generate(4, (i) => AnimatedContainer(
+            children: List.generate(2, (i) => AnimatedContainer(
               duration: 300.ms,
               width: _currentPage == i ? 24 : 8,
               height: 8,
@@ -142,67 +136,43 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  Widget _buildWelcomeStep() {
-    return Padding(
-      padding: const EdgeInsets.all(32.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [Theme.of(context).primaryColor, const Color(0xFF818CF8)]),
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(color: Theme.of(context).primaryColor.withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 10))
-              ],
-            ),
-            child: const Icon(LucideIcons.piggyBank, size: 64, color: Colors.white),
-          ).animate().scale(duration: 600.ms, curve: Curves.bounceOut).shimmer(delay: 1.seconds),
-          const SizedBox(height: 48),
-          Text(
-            'FinTrack Pro',
-            style: Theme.of(context).textTheme.displayMedium?.copyWith(
-              color: Theme.of(context).primaryColor,
-              letterSpacing: -1,
-            ),
-          ).animate().fade(delay: 200.ms).slideY(begin: 0.2, end: 0),
-          const SizedBox(height: 12),
-          Text(
-            'Master your money with cinematic insights and precision tracking.',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.grey),
-          ).animate().fade(delay: 400.ms).slideY(begin: 0.2, end: 0),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNameStep() {
+  Widget _buildWelcomeAndNameStep() {
     return Padding(
       padding: const EdgeInsets.all(32.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Hello, I am FinTrack.', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold))
-            .animate().fade().slideX(begin: -0.1, end: 0),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: [Theme.of(context).primaryColor, const Color(0xFF818CF8)]),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(LucideIcons.piggyBank, size: 40, color: Colors.white),
+          ).animate().scale(duration: 600.ms, curve: Curves.bounceOut),
+          const SizedBox(height: 32),
+          Text(
+            'FinTrack Pro',
+            style: Theme.of(context).textTheme.displaySmall?.copyWith(
+              color: Theme.of(context).primaryColor,
+              fontWeight: FontWeight.bold,
+            ),
+          ).animate().fade().slideX(begin: -0.1),
           const SizedBox(height: 8),
           const Text('What should I call you?', style: TextStyle(color: Colors.grey, fontSize: 18))
-            .animate().fade(delay: 200.ms).slideX(begin: -0.1, end: 0),
-          const SizedBox(height: 48),
+            .animate().fade(delay: 200.ms).slideX(begin: -0.1),
+          const SizedBox(height: 32),
           TextField(
             controller: _nameController,
             autofocus: true,
-            style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             decoration: InputDecoration(
               hintText: 'Your name',
               hintStyle: TextStyle(color: Colors.grey.withValues(alpha: 0.3)),
               border: InputBorder.none,
-              enabledBorder: InputBorder.none,
-              focusedBorder: InputBorder.none,
             ),
-          ).animate().fade(delay: 400.ms).slideY(begin: 0.1, end: 0),
+          ).animate().fade(delay: 400.ms).slideY(begin: 0.1),
         ],
       ),
     );
@@ -215,9 +185,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Select Currency', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
+          const Text('Currency', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
-          const Text('This will be your primary unit for reports.', style: TextStyle(color: Colors.grey)),
+          const Text('Choose your primary currency.', style: TextStyle(color: Colors.grey)),
           const SizedBox(height: 32),
           GridView.builder(
             shrinkWrap: true,
@@ -245,81 +215,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       color: isSelected ? Theme.of(context).primaryColor : Colors.grey.withValues(alpha: 0.1),
                       width: 2,
                     ),
-                    boxShadow: isSelected ? [
-                      BoxShadow(color: Theme.of(context).primaryColor.withValues(alpha: 0.3), blurRadius: 10, offset: const Offset(0, 4))
-                    ] : [],
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(curr['flag']!, style: const TextStyle(fontSize: 24)),
                       const SizedBox(height: 4),
-                      Text(
-                        curr['symbol']!,
-                        style: TextStyle(
-                          fontSize: 18, 
-                          fontWeight: FontWeight.bold,
-                          color: isSelected ? Colors.white : null,
-                        ),
-                      ),
+                      Text(curr['symbol']!, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isSelected ? Colors.white : null)),
                     ],
                   ),
                 ),
-              ).animate().fade(delay: (index * 50).ms).scale();
+              );
             },
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildThemeStep() {
-    return Padding(
-      padding: const EdgeInsets.all(32.0),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('Visual Aesthetic', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          const Text('Choose the style that matches your flow.', style: TextStyle(color: Colors.grey)),
-          const SizedBox(height: 32),
-          Row(
-            children: [
-              _ThemeOption(
-                label: 'Light',
-                icon: LucideIcons.sun,
-                isSelected: _selectedTheme == ThemeMode.light,
-                onTap: () => setState(() => _selectedTheme = ThemeMode.light),
-              ),
-              const SizedBox(width: 16),
-              _ThemeOption(
-                label: 'Dark',
-                icon: LucideIcons.moon,
-                isSelected: _selectedTheme == ThemeMode.dark,
-                onTap: () => setState(() => _selectedTheme = ThemeMode.dark),
-              ),
-            ],
-          ),
-          const SizedBox(height: 32),
-          FintrackUI.glassCard(
-            padding: const EdgeInsets.all(24),
-            color: _selectedTheme == ThemeMode.dark ? const Color(0xFF1E293B) : Colors.white,
-            opacity: _selectedTheme == ThemeMode.dark ? 0.4 : 0.8,
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(height: 8, width: 60, decoration: BoxDecoration(color: Colors.grey.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(4))),
-                    const CircleAvatar(radius: 10, backgroundColor: Colors.blueAccent),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Container(height: 30, width: double.infinity, decoration: BoxDecoration(color: Theme.of(context).primaryColor, borderRadius: BorderRadius.circular(10))),
-              ],
-            ),
-          ).animate().fade().scale(),
         ],
       ),
     );
@@ -330,61 +238,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       padding: const EdgeInsets.all(24.0),
       child: FintrackUI.actionButton(
         context: context,
-        label: _currentPage == 3 ? 'Get Started' : 'Continue',
+        label: _currentPage == 1 ? 'Start Tracking' : 'Continue',
         onPressed: _nextPage,
-        icon: _currentPage == 3 ? LucideIcons.rocket : LucideIcons.arrowRight,
-      ),
-    ).animate().fade(delay: 400.ms).slideY(begin: 0.2, end: 0);
-  }
-}
-
-class _ThemeOption extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _ThemeOption({
-    required this.label,
-    required this.icon,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: () {
-          HapticFeedback.selectionClick();
-          onTap();
-        },
-        child: AnimatedContainer(
-          duration: 300.ms,
-          padding: const EdgeInsets.symmetric(vertical: 24),
-          decoration: BoxDecoration(
-            color: isSelected ? Theme.of(context).primaryColor : Theme.of(context).cardTheme.color,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: isSelected ? Theme.of(context).primaryColor : Colors.grey.withValues(alpha: 0.1),
-              width: 2,
-            ),
-          ),
-          child: Column(
-            children: [
-              Icon(icon, color: isSelected ? Colors.white : Colors.grey, size: 32),
-              const SizedBox(height: 12),
-              Text(
-                label,
-                style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.grey,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            ],
-          ),
-        ),
+        icon: _currentPage == 1 ? LucideIcons.rocket : LucideIcons.arrowRight,
       ),
     );
   }

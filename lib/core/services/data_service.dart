@@ -17,12 +17,10 @@ class DataExportImportService {
       
       await file.writeAsString(jsonString);
       
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(file.path)],
-          subject: 'FinTrack Pro Backup',
-          text: 'My FinTrack Pro data backup from ${DateTime.now().toString()}',
-        ),
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        subject: 'FinTrack Pro Backup',
+        text: 'My FinTrack Pro data backup from ${DateTime.now().toString()}',
       );
     } catch (e) {
       throw Exception('Failed to export JSON: $e');
@@ -55,12 +53,10 @@ class DataExportImportService {
       
       await file.writeAsString(csvData);
       
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(file.path)],
-          subject: 'FinTrack Pro Transactions CSV',
-          text: 'My transaction export from ${DateTime.now().toString()}',
-        ),
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        subject: 'FinTrack Pro Backup',
+        text: 'My FinTrack Pro data backup from ${DateTime.now().toString()}',
       );
     } catch (e) {
       throw Exception('Failed to export CSV: $e');

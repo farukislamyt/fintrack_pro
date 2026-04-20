@@ -93,14 +93,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             'Preferences',
             [
               _buildSettingsTile(context, 'Currency', LucideIcons.coins, trailing: Text(prefs.currencySymbol)),
-              _buildSettingsTile(context, 'Dark Mode', LucideIcons.moon, 
-                trailing: Switch(
-                  value: prefs.themeMode == ThemeMode.dark, 
-                  onChanged: (v) {
-                    HapticFeedback.mediumImpact();
-                    ref.read(preferencesProvider.notifier).updateTheme(v ? ThemeMode.dark : ThemeMode.light);
-                  }
-                )),
             ],
           ),
           const SizedBox(height: 24),

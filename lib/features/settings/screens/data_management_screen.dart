@@ -165,8 +165,7 @@ class DataManagementScreen extends ConsumerWidget {
         if (pRaw is Map) {
           final String n = (pRaw['userName'] ?? '').toString();
           final String s = (pRaw["currencySymbol"] ?? "\$").toString();
-          final ThemeMode t = ref.read(preferencesProvider).themeMode;
-          ref.read(preferencesProvider.notifier).completeOnboarding(n, s, t);
+          ref.read(preferencesProvider.notifier).completeOnboarding(n, s);
         }
 
         _showSuccess(context, 'Success!');
