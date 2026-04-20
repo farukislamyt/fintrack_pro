@@ -157,6 +157,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             [
               _buildSettingsTile(
                 context, 
+                'Data & Backup', 
+                LucideIcons.database, 
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  context.push('/settings/data_management');
+                },
+              ),
+              _buildSettingsTile(
+                context, 
                 'Clear All Data', 
                 LucideIcons.trash2, 
                 color: Theme.of(context).colorScheme.error,

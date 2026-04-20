@@ -49,6 +49,27 @@ class TransactionNotifier extends Notifier<List<TransactionModel>> {
     state = [];
     _saveToPrefs(state);
   }
+
+  void replaceAllData(List<TransactionModel> newList) {
+    newList.sort((a, b) => b.date.compareTo(a.date));
+    state = newList;
+    _saveToPrefs(state);
+  }
+
+  void mergeTransactions(List<TransactionModel> importedList) {
+    final Map<String, TransactionModel> currentMap = {
+      for (var t in state) t.id: t
+    };
+    
+    // Simple deduplication based on ID or signature (Date+Amount+Category)
+    for (var t in importedList) {
+      if (!currentMap.containsKey(t.id)) {
+        state = [t, ...state];
+      }
+    }
+    state.sort((a, b) => b.date.compareTo(a.date));
+    _saveToPrefs(state);
+  }
 }
 
 final transactionProvider = NotifierProvider<TransactionNotifier, List<TransactionModel>>(() {
@@ -165,4 +186,28 @@ final reportsExpensesByCategoryProvider = Provider<Map<String, double>>((ref) {
     map.entries.toList()..sort((e1, e2) => e2.value.compareTo(e1.value))
   );
   return sortedMap;
+});
+
+// Extension: Monthly Analytics for Dashboard
+final thisMonthTransactionsProvider = Provider<List<TransactionModel>>((ref) {
+  final transactions = ref.watch(transactionProvider);
+  final now = DateTime.now();
+  return transactions.where((t) => t.date.year == now.year && t.date.month == now.month).toList();
+});
+
+final thisMonthIncomeProvider = Provider<double>((ref) {
+  return ref.watch(thisMonthTransactionsProvider)
+      .where((t) => t.type == TransactionType.income)
+      .fold(0.0, (sum, item) => sum + item.amount);
+});
+
+final thisMonthExpenseProvider = Provider<double>((ref) {
+  return ref.watch(thisMonthTransactionsProvider)
+      .where((t) => t.type == TransactionType.expense)
+      .fold(0.0, (sum, item) => sum + item.amount);
+});
+
+final dashboardRecentTransactionsProvider = Provider<List<TransactionModel>>((ref) {
+  final transactions = ref.watch(transactionProvider);
+  return transactions.take(5).toList();
 });

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import '../../../core/widgets/glass_container.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   final Widget child;
@@ -23,6 +25,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   }
 
   void _onItemTapped(int index, BuildContext context) {
+    HapticFeedback.lightImpact();
     switch (index) {
       case 0:
         context.go('/dashboard');
@@ -45,70 +48,69 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   @override
   Widget build(BuildContext context) {
     final int currentIndex = _calculateSelectedIndex(context);
+    final theme = Theme.of(context);
 
     return Scaffold(
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        child: KeyedSubtree(
-          key: ValueKey(currentIndex),
-          child: widget.child,
-        ),
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: NavigationBar(
-          selectedIndex: currentIndex,
-          onDestinationSelected: (index) => _onItemTapped(index, context),
-          labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
-          height: 70,
-          destinations: [
-            const NavigationDestination(
-              icon: Icon(LucideIcons.layoutDashboard),
-              label: 'Dashboard',
-            ),
-            const NavigationDestination(
-              icon: Icon(LucideIcons.pieChart),
-              label: 'Reports',
-            ),
-            NavigationDestination(
-              icon: Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Theme.of(context).primaryColor.withValues(alpha: 0.4),
-                      blurRadius: 8,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  LucideIcons.plus,
-                  color: Colors.white,
-                  size: 24,
-                ),
+      extendBody: true, // Crucial for glassmorphism to show whatever is behind
+      body: widget.child,
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+        child: GlassContainer(
+          borderRadius: BorderRadius.circular(32),
+          blur: 15,
+          opacity: theme.brightness == Brightness.dark ? 0.08 : 0.4,
+          color: theme.brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white,
+          border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
+          child: NavigationBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            selectedIndex: currentIndex,
+            onDestinationSelected: (index) => _onItemTapped(index, context),
+            labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
+            height: 70,
+            destinations: [
+              const NavigationDestination(
+                icon: Icon(LucideIcons.layoutDashboard),
+                label: 'Dashboard',
               ),
-              label: 'Add',
-            ),
-            const NavigationDestination(
-              icon: Icon(LucideIcons.history),
-              label: 'History',
-            ),
-            const NavigationDestination(
-              icon: Icon(LucideIcons.settings),
-              label: 'Settings',
-            ),
-          ],
+              const NavigationDestination(
+                icon: Icon(LucideIcons.pieChart),
+                label: 'Reports',
+              ),
+              NavigationDestination(
+                icon: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [theme.primaryColor, const Color(0xFF818CF8)],
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.primaryColor.withValues(alpha: 0.4),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    LucideIcons.plus,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+                label: 'Add',
+              ),
+              const NavigationDestination(
+                icon: Icon(LucideIcons.history),
+                label: 'History',
+              ),
+              const NavigationDestination(
+                icon: Icon(LucideIcons.settings),
+                label: 'Settings',
+              ),
+            ],
+          ),
         ),
       ),
     );

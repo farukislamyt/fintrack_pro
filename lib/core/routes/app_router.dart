@@ -8,6 +8,7 @@ import '../../features/add_transaction/screens/add_transaction_screen.dart';
 import '../../features/history/screens/history_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../../features/settings/screens/legal_detail_screen.dart';
+import '../../features/settings/screens/data_management_screen.dart';
 import '../../features/onboarding/screens/onboarding_screen.dart';
 import '../providers/preferences_provider.dart';
 import '../constants/legal_content.dart';
@@ -100,6 +101,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                   title: 'Data Safety',
                   content: LegalContent.dataSafety,
                 ),
+              ),
+              GoRoute(
+                path: 'data_management',
+                builder: (context, state) => const DataManagementScreen(),
               ),
             ],
           ),

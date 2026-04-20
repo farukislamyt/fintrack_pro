@@ -87,6 +87,14 @@ class CategoryNotifier extends Notifier<CategoryState> {
     }
     _saveToPrefs();
   }
+
+  void importCategories(List<String> income, List<String> expense) {
+    state = CategoryState(
+      incomeCategories: income,
+      expenseCategories: expense,
+    );
+    _saveToPrefs();
+  }
 }
 
 final categoryProvider = NotifierProvider<CategoryNotifier, CategoryState>(() {

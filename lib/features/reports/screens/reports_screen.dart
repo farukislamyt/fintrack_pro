@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons/lucide_icons.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import '../../../core/models/transaction_model.dart';
 import '../../../core/providers/transaction_provider.dart';
 import '../../../core/providers/preferences_provider.dart';
@@ -100,7 +99,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     return Text(
       title,
       style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-    ).animate().fade().slideX(begin: -0.1, end: 0);
+    );
   }
 
   Widget _buildSummaryRow(_ReportData current, _ReportData previous, NumberFormat format) {
@@ -143,7 +142,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           isFullWidth: true,
         ),
       ],
-    ).animate().fade().slideY(begin: 0.1, end: 0);
+    );
   }
 
   String _getDiffText(double curr, double prev, NumberFormat format) {
@@ -184,39 +183,41 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         expenseSpots.insert(0, FlSpot(-1, 0));
     }
 
-    return Container(
-      height: 220,
-      padding: const EdgeInsets.only(top: 24, right: 24, left: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: LineChart(
-        LineChartData(
-          gridData: const FlGridData(show: false),
-          titlesData: const FlTitlesData(show: false),
-          borderData: FlBorderData(show: false),
-          lineBarsData: [
-            LineChartBarData(
-              spots: incomeSpots,
-              isCurved: true,
-              color: Colors.green,
-              barWidth: 3,
-              dotData: const FlDotData(show: false),
-              belowBarData: BarAreaData(show: true, color: Colors.green.withValues(alpha: 0.1)),
-            ),
-            LineChartBarData(
-              spots: expenseSpots,
-              isCurved: true,
-              color: Colors.orange,
-              barWidth: 3,
-              dotData: const FlDotData(show: false),
-              belowBarData: BarAreaData(show: true, color: Colors.orange.withValues(alpha: 0.1)),
-            ),
-          ],
+    return RepaintBoundary(
+      child: Container(
+        height: 220,
+        padding: const EdgeInsets.only(top: 24, right: 24, left: 8),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardTheme.color,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        child: LineChart(
+          LineChartData(
+            gridData: const FlGridData(show: false),
+            titlesData: const FlTitlesData(show: false),
+            borderData: FlBorderData(show: false),
+            lineBarsData: [
+              LineChartBarData(
+                spots: incomeSpots,
+                isCurved: true,
+                color: Colors.green,
+                barWidth: 3,
+                dotData: const FlDotData(show: false),
+                belowBarData: BarAreaData(show: true, color: Colors.green.withValues(alpha: 0.1)),
+              ),
+              LineChartBarData(
+                spots: expenseSpots,
+                isCurved: true,
+                color: Colors.orange,
+                barWidth: 3,
+                dotData: const FlDotData(show: false),
+                belowBarData: BarAreaData(show: true, color: Colors.orange.withValues(alpha: 0.1)),
+              ),
+            ],
+          ),
         ),
       ),
-    ).animate().scale(duration: 400.ms, curve: Curves.easeOutBack);
+    );
   }
 
   Widget _buildPieChart(Map<String, double> categoryTotals) {
@@ -238,41 +239,43 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       i++;
     });
 
-    return Row(
-      children: [
-        Expanded(
-          flex: 2,
-          child: SizedBox(
-            height: 200,
-            child: PieChart(
-              PieChartData(
-                sections: sections,
-                sectionsSpace: 4,
-                centerSpaceRadius: 40,
-                pieTouchData: PieTouchData(
-                  touchCallback: (event, response) {
-                    setState(() {
-                      if (!event.isInterestedForInteractions || response == null || response.touchedSection == null) {
-                        _touchedIndex = -1;
-                        return;
-                      }
-                      _touchedIndex = response.touchedSection!.touchedSectionIndex;
-                    });
-                  },
+    return RepaintBoundary(
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: SizedBox(
+              height: 200,
+              child: PieChart(
+                PieChartData(
+                  sections: sections,
+                  sectionsSpace: 4,
+                  centerSpaceRadius: 40,
+                  pieTouchData: PieTouchData(
+                    touchCallback: (event, response) {
+                      setState(() {
+                        if (!event.isInterestedForInteractions || response == null || response.touchedSection == null) {
+                          _touchedIndex = -1;
+                          return;
+                        }
+                        _touchedIndex = response.touchedSection!.touchedSectionIndex;
+                      });
+                    },
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-        Expanded(
-          flex: 3,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: _buildLegend(categoryTotals, colors),
+          Expanded(
+            flex: 3,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: _buildLegend(categoryTotals, colors),
+            ),
           ),
-        ),
-      ],
-    ).animate().fade();
+        ],
+      ),
+    );
   }
 
   List<Widget> _buildLegend(Map<String, double> totals, List<Color> colors) {
@@ -323,7 +326,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
           _InsightRow(icon: LucideIcons.pieChart, label: 'Top Category', value: _calculateCategoryTotals(transactions).entries.reduce((a, b) => a.value > b.value ? a : b).key),
         ],
       ),
-    ).animate().fade(delay: 200.ms).slideY(begin: 0.1, end: 0);
+    );
   }
 
   Widget _buildTransactionLedger(List<TransactionModel> transactions, NumberFormat format) {
