@@ -16,6 +16,78 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  void _editName() {
+    final prefs = ref.read(preferencesProvider);
+    final controller = TextEditingController(text: prefs.userName);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Edit Name'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(hintText: 'Enter your name'),
+          textCapitalization: TextCapitalization.words,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () {
+              final name = controller.text.trim();
+              if (name.isNotEmpty) {
+                ref.read(preferencesProvider.notifier).updateUserName(name);
+                Navigator.pop(ctx);
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _editCurrency() {
+    final symbols = ['\$', '\u20AC', '\u00A3', '\u00A5', '\u20B9', '\u09F3', '\u20BD'];
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (context) => Consumer(
+        builder: (context, ref, _) {
+          final currentCurrency = ref.watch(preferencesProvider).currencySymbol;
+          return Container(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Select Currency', style: Theme.of(context).textTheme.titleLarge),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: symbols.map((s) => ChoiceChip(
+                    label: Text(s, style: const TextStyle(fontSize: 18)),
+                    selected: currentCurrency == s,
+                    onSelected: (val) {
+                      if (val) {
+                        HapticFeedback.lightImpact();
+                        ref.read(preferencesProvider.notifier).updateCurrency(s);
+                        Navigator.pop(context);
+                      }
+                    },
+                  )).toList(),
+                ),
+                const SizedBox(height: 32),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   void _clearData() {
     HapticFeedback.heavyImpact();
     showDialog(
@@ -65,39 +137,81 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16.0),
         children: [
-          Row(
-            children: [
-              ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.asset(
-                  'assets/images/logo.png',
-                  width: 60,
-                  height: 60,
-                  fit: BoxFit.cover,
+          InkWell(
+            onTap: _editName,
+            borderRadius: BorderRadius.circular(12),
+            child: Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.asset(
+                    'assets/images/logo.png',
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.cover,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    prefs.userName.isNotEmpty ? prefs.userName : 'User',
-                    style: Theme.of(context).textTheme.titleLarge,
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            prefs.userName.isNotEmpty ? prefs.userName : 'User',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          const SizedBox(width: 8),
+                          const Icon(LucideIcons.edit2, size: 14, color: Colors.grey),
+                        ],
+                      ),
+                      Text(
+                        'admin@fintrack.pro',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ],
                   ),
-                  Text(
-                    'admin@fintrack.pro',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 32),
           _buildSettingsGroup(
             context,
             'Preferences',
             [
-              _buildSettingsTile(context, 'Currency', LucideIcons.coins, trailing: Text(prefs.currencySymbol)),
+              _buildSettingsTile(
+                context, 
+                'Currency', 
+                LucideIcons.coins, 
+                trailing: Text(prefs.currencySymbol, style: TextStyle(color: Theme.of(context).primaryColor, fontWeight: FontWeight.bold)),
+                onTap: _editCurrency,
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          _buildSettingsGroup(
+            context,
+            'Security',
+            [
+              _buildSettingsTile(
+                context, 
+                'App Passcode', 
+                LucideIcons.lock, 
+                trailing: Switch(
+                  value: prefs.isPasscodeEnabled,
+                  onChanged: (val) {
+                    HapticFeedback.mediumImpact();
+                    if (val) {
+                      context.push('/set_passcode');
+                    } else {
+                      ref.read(preferencesProvider.notifier).disablePasscode();
+                    }
+                  },
+                  activeThumbColor: Theme.of(context).primaryColor,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 24),

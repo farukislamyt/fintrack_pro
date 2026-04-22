@@ -7,6 +7,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import '../../../core/models/transaction_model.dart';
 import '../../../core/providers/transaction_provider.dart';
 import '../../../core/providers/preferences_provider.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/premium_empty_state.dart';
 
 class ReportsScreen extends ConsumerStatefulWidget {
@@ -117,7 +118,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             Expanded(child: _SummaryCard(
               label: 'Income', 
               amount: format.format(current.income), 
-              color: Colors.green, 
+              color: AppTheme.chartIncomeColor, 
               icon: LucideIcons.trendingUp,
               subtext: _getDiffText(current.income, previous.income, format),
             )),
@@ -125,7 +126,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
             Expanded(child: _SummaryCard(
               label: 'Expense', 
               amount: format.format(current.expense), 
-              color: Colors.orange, 
+              color: AppTheme.chartExpenseColor, 
               icon: LucideIcons.trendingDown,
               subtext: '${expDiff > 0 ? '+' : ''}${expDiff.toStringAsFixed(1)}% vs prev',
               isBad: expDiff > 0,
@@ -200,18 +201,18 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
               LineChartBarData(
                 spots: incomeSpots,
                 isCurved: true,
-                color: Colors.green,
+                color: AppTheme.chartIncomeColor,
                 barWidth: 3,
                 dotData: const FlDotData(show: false),
-                belowBarData: BarAreaData(show: true, color: Colors.green.withValues(alpha: 0.1)),
+                belowBarData: BarAreaData(show: true, color: AppTheme.chartIncomeColor.withValues(alpha: 0.1)),
               ),
               LineChartBarData(
                 spots: expenseSpots,
                 isCurved: true,
-                color: Colors.orange,
+                color: AppTheme.chartExpenseColor,
                 barWidth: 3,
                 dotData: const FlDotData(show: false),
-                belowBarData: BarAreaData(show: true, color: Colors.orange.withValues(alpha: 0.1)),
+                belowBarData: BarAreaData(show: true, color: AppTheme.chartExpenseColor.withValues(alpha: 0.1)),
               ),
             ],
           ),

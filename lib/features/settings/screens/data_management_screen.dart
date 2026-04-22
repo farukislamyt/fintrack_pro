@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/providers/transaction_provider.dart';
 import '../../../core/providers/preferences_provider.dart';
 import '../../../core/providers/category_provider.dart';
@@ -61,6 +63,24 @@ class DataManagementScreen extends ConsumerWidget {
             trailing: const Icon(LucideIcons.chevronRight, size: 16),
             onTap: () => _handleCsvImport(context, ref),
           ),
+          const SizedBox(height: 24),
+          FintrackUI.sectionHeader(context, 'Critical Actions', icon: LucideIcons.alertTriangle),
+          const SizedBox(height: 8),
+          FintrackUI.listTile(
+            context: context,
+            title: const Text('Master Reset', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)),
+            subtitle: const Text('Wipe all data and restart onboarding.'),
+            leading: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.red.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(LucideIcons.trash2, color: Colors.red, size: 20),
+            ),
+            trailing: const Icon(LucideIcons.chevronRight, size: 16, color: Colors.red),
+            onTap: () => _handleMasterReset(context, ref),
+          ),
           const SizedBox(height: 48),
           const Center(
             child: Text(
@@ -71,6 +91,33 @@ class DataManagementScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _handleMasterReset(BuildContext context, WidgetRef ref) async {
+    HapticFeedback.heavyImpact();
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Completely Reset?'),
+        content: const Text('This will delete all transactions, categories, and settings. This cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true), 
+            child: const Text('Reset Everything', style: TextStyle(color: Colors.red))
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      ref.read(transactionProvider.notifier).clearAll();
+      ref.read(preferencesProvider.notifier).disablePasscode();
+      // Reset onboarding
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+      if (context.mounted) context.go('/');
+    }
   }
 
   Widget _buildIcon(BuildContext context, IconData icon) {
@@ -165,7 +212,8 @@ class DataManagementScreen extends ConsumerWidget {
         if (pRaw is Map) {
           final String n = (pRaw['userName'] ?? '').toString();
           final String s = (pRaw["currencySymbol"] ?? "\$").toString();
-          ref.read(preferencesProvider.notifier).completeOnboarding(n, s);
+          ref.read(preferencesProvider.notifier).updateUserName(n);
+          ref.read(preferencesProvider.notifier).updateCurrency(s);
         }
 
         _showSuccess(context, 'Success!');

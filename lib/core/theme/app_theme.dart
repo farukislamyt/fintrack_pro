@@ -5,7 +5,9 @@ class AppTheme {
   // Brand Colors - NEW Magenta Theme
   static const Color primaryColor = Color(0xFFE2136E); 
   static const Color secondaryColor = Color(0xFF10B981); // Keep Emerald for stability
-  static const Color accentColor = Color(0xFFFB7185); // Lighter pink
+  static const Color accentColor = Color(0xFFFB7185); 
+  static const Color chartIncomeColor = Color(0xFF10B981); // Emerald
+  static const Color chartExpenseColor = Color(0xFFF43F5E); // Crimson
   
   // Neutral Colors - Dark
   static const Color backgroundColor = Color(0xFF0F172A); 

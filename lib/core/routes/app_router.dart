@@ -9,41 +9,29 @@ import '../../features/history/screens/history_screen.dart';
 import '../../features/settings/screens/settings_screen.dart';
 import '../../features/settings/screens/legal_detail_screen.dart';
 import '../../features/settings/screens/data_management_screen.dart';
-import '../../features/onboarding/screens/onboarding_screen.dart';
-import '../providers/preferences_provider.dart';
+import '../../features/onboarding/screens/splash_screen.dart';
+import '../../features/onboarding/screens/passcode_screen.dart';
 import '../constants/legal_content.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<NavigatorState> _shellNavigatorKey = GlobalKey<NavigatorState>();
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final preferences = ref.watch(preferencesProvider);
-
   return GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: preferences.hasCompletedOnboarding ? '/dashboard' : '/onboarding',
-    redirect: (context, state) {
-      if (!preferences.isLoaded) return null; // Wait for initial preferences load
-      
-      final isGoingToOnboarding = state.matchedLocation == '/onboarding';
-      final hasFinishedOnboarding = preferences.hasCompletedOnboarding;
-
-      if (!hasFinishedOnboarding && !isGoingToOnboarding) {
-        return '/onboarding';
-      }
-      
-      if (hasFinishedOnboarding && isGoingToOnboarding) {
-        return '/dashboard';
-      }
-
-      return null;
-    },
+    initialLocation: '/',
     routes: [
       GoRoute(
-        path: '/onboarding',
-        pageBuilder: (context, state) => const NoTransitionPage(
-          child: OnboardingScreen(),
-        ),
+        path: '/',
+        builder: (context, state) => const SplashScreen(),
+      ),
+      GoRoute(
+        path: '/verify_passcode',
+        builder: (context, state) => const PasscodeScreen(mode: PasscodeMode.verify),
+      ),
+      GoRoute(
+        path: '/set_passcode',
+        builder: (context, state) => const PasscodeScreen(mode: PasscodeMode.set),
       ),
       ShellRoute(
         navigatorKey: _shellNavigatorKey,

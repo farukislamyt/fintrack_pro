@@ -21,6 +21,7 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
   DateTime _selectedDate = DateTime.now();
   TransactionType _selectedType = TransactionType.expense;
   String? _selectedCategory;
+  bool _showCelebration = false;
 
   @override
   void dispose() {
@@ -51,6 +52,12 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
 
     ref.read(transactionProvider.notifier).addTransaction(transaction);
     
+    // Show celebration overlay
+    setState(() => _showCelebration = true);
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (mounted) setState(() => _showCelebration = false);
+    });
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Transaction Saved!'),
@@ -110,159 +117,180 @@ class _AddTransactionScreenState extends ConsumerState<AddTransactionScreen> {
       appBar: AppBar(
         title: const Text('Add Transaction'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SegmentedButton<TransactionType>(
-              segments: const [
-                ButtonSegment(
-                  value: TransactionType.income, 
-                  label: Text('Income'),
-                  icon: Icon(LucideIcons.arrowDownToLine),
-                ),
-                ButtonSegment(
-                  value: TransactionType.expense, 
-                  label: Text('Expense'),
-                  icon: Icon(LucideIcons.arrowUpFromLine),
-                ),
-              ],
-              selected: {_selectedType},
-              onSelectionChanged: (Set<TransactionType> newSelection) {
-                setState(() {
-                  _selectedType = newSelection.first;
-                  _selectedCategory = null; // Re-evaluate in build
-                });
-              },
-            ).animate().fade().slideY(begin: 0.1, end: 0),
-            const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Theme.of(context).cardTheme.color,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  TextField(
-                    controller: _amountController,
-                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                    decoration: InputDecoration(
-                      labelText: 'Amount',
-                      prefixText: '$currencySymbol ',
-                      prefixStyle: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
-                      ),
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SegmentedButton<TransactionType>(
+                  segments: const [
+                    ButtonSegment(
+                      value: TransactionType.income, 
+                      label: Text('Income'),
+                      icon: Icon(LucideIcons.arrowDownToLine),
                     ),
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    ButtonSegment(
+                      value: TransactionType.expense, 
+                      label: Text('Expense'),
+                      icon: Icon(LucideIcons.arrowUpFromLine),
+                    ),
+                  ],
+                  selected: {_selectedType},
+                  onSelectionChanged: (Set<TransactionType> newSelection) {
+                    setState(() {
+                      _selectedType = newSelection.first;
+                      _selectedCategory = null; 
+                    });
+                  },
+                ).animate().fade().slideY(begin: 0.1, end: 0),
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).cardTheme.color,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.05),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 20),
-                  Row(
+                  child: Column(
                     children: [
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          initialValue: _selectedCategory,
+                      TextField(
+                        controller: _amountController,
+                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                        decoration: InputDecoration(
+                          labelText: 'Amount',
+                          prefixText: '$currencySymbol ',
+                          prefixStyle: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
+                          ),
+                        ),
+                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: DropdownButtonFormField<String>(
+                            initialValue: _selectedCategory,
+                              decoration: InputDecoration(
+                                labelText: 'Category',
+                                prefixIcon: const Icon(LucideIcons.tag),
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                  borderSide: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
+                                ),
+                              ),
+                              items: currentCategories
+                                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                                  .toList(),
+                              onChanged: (val) {
+                                if (val != null) {
+                                  setState(() => _selectedCategory = val);
+                                }
+                              },
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton.filledTonal(
+                            onPressed: _showAddCategoryDialog,
+                            icon: const Icon(LucideIcons.plus),
+                            tooltip: 'Add New Category',
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      InkWell(
+                        onTap: () async {
+                          final date = await showDatePicker(
+                            context: context,
+                            initialDate: _selectedDate,
+                            firstDate: DateTime(2000),
+                            lastDate: DateTime.now(),
+                          );
+                          if (date != null) {
+                            setState(() => _selectedDate = date);
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(16),
+                        child: InputDecorator(
                           decoration: InputDecoration(
-                            labelText: 'Category',
-                            prefixIcon: const Icon(LucideIcons.tag),
+                            labelText: 'Date',
+                            prefixIcon: const Icon(LucideIcons.calendar),
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
                               borderSide: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
                             ),
                           ),
-                          items: currentCategories
-                              .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                              .toList(),
-                          onChanged: (val) {
-                            if (val != null) {
-                              setState(() => _selectedCategory = val);
-                            }
-                          },
+                          child: Text(
+                            DateFormat.yMMMMd().format(_selectedDate),
+                            style: const TextStyle(fontSize: 16),
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      IconButton.filledTonal(
-                        onPressed: _showAddCategoryDialog,
-                        icon: const Icon(LucideIcons.plus),
-                        tooltip: 'Add New Category',
+                      const SizedBox(height: 20),
+                      TextField(
+                        controller: _descriptionController,
+                        decoration: InputDecoration(
+                          labelText: 'Description (Optional)',
+                          prefixIcon: const Icon(LucideIcons.fileText),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      ElevatedButton(
+                        onPressed: _saveTransaction,
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          backgroundColor: Theme.of(context).primaryColor,
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(double.infinity, 60),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 4,
+                        ),
+                        child: const Text('Save Transaction', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
-                  InkWell(
-                    onTap: () async {
-                      final date = await showDatePicker(
-                        context: context,
-                        initialDate: _selectedDate,
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime.now(),
-                      );
-                      if (date != null) {
-                        setState(() => _selectedDate = date);
-                      }
-                    },
-                    borderRadius: BorderRadius.circular(16),
-                    child: InputDecorator(
-                      decoration: InputDecoration(
-                        labelText: 'Date',
-                        prefixIcon: const Icon(LucideIcons.calendar),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
-                        ),
-                      ),
-                      child: Text(
-                        DateFormat.yMMMMd().format(_selectedDate),
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  TextField(
-                    controller: _descriptionController,
-                    decoration: InputDecoration(
-                      labelText: 'Description (Optional)',
-                      prefixIcon: const Icon(LucideIcons.fileText),
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        borderSide: BorderSide(color: Theme.of(context).dividerColor.withValues(alpha: 0.1)),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                  ElevatedButton(
-                    onPressed: _saveTransaction,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 18),
-                      backgroundColor: Theme.of(context).primaryColor,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(double.infinity, 60),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      elevation: 4,
-                    ),
-                    child: const Text('Save Transaction', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  ),
-                ],
+                ).animate().fade(delay: 200.ms).slideY(begin: 0.1, end: 0),
+              ],
+            ),
+          ),
+          if (_showCelebration)
+            Container(
+              color: Colors.black.withValues(alpha: 0.8),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(LucideIcons.checkCircle2, color: Color(0xFFE2136E), size: 100)
+                      .animate().scale(duration: 600.ms, curve: Curves.bounceOut),
+                    const SizedBox(height: 24),
+                    const Text('Transaction Captured!', 
+                      style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold))
+                      .animate().fade(delay: 200.ms),
+                  ],
+                ),
               ),
-            ).animate().fade(delay: 200.ms).slideY(begin: 0.1, end: 0),
-          ],
-        ),
+            ).animate().fade(duration: 300.ms).fadeOut(delay: 1.seconds),
+        ],
       ),
     );
   }

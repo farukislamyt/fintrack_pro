@@ -10,6 +10,7 @@ import '../../../core/design/fintrack_ui.dart';
 import '../../../core/models/transaction_model.dart';
 import '../../../core/providers/transaction_provider.dart';
 import '../../../core/providers/preferences_provider.dart';
+import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/premium_empty_state.dart';
 
 
@@ -62,7 +63,9 @@ class DashboardScreen extends ConsumerWidget {
                         const SizedBox(height: 24),
                         const _DashboardMonthlyPulse(),
                         const SizedBox(height: 24),
-                        const _DashboardMonthlyFlowChart(),
+                         const _DashboardMonthlyFlowChart(),
+                        const SizedBox(height: 24),
+                        const _DashboardFinancialTip(),
                         const SizedBox(height: 32),
                         FintrackUI.sectionHeader(
                           context, 
@@ -126,7 +129,29 @@ class _DashboardBalanceCard extends ConsumerWidget {
                 opacity: 0.3,
                 child: IgnorePointer(
                   child: RepaintBoundary(
-                    child: LineChart(_buildSparklineData(transactions)),
+                    child: Consumer(
+                      builder: (context, ref, _) {
+                        final spots = ref.watch(dashboardSparklineSpotsProvider);
+                        return LineChart(
+                          LineChartData(
+                            gridData: const FlGridData(show: false),
+                            titlesData: const FlTitlesData(show: false),
+                            borderData: FlBorderData(show: false),
+                            lineBarsData: [
+                              LineChartBarData(
+                                spots: spots,
+                                isCurved: true,
+                                color: Colors.white,
+                                barWidth: 3,
+                                isStrokeCapRound: true,
+                                dotData: const FlDotData(show: false),
+                                belowBarData: BarAreaData(show: true, color: Colors.white.withValues(alpha: 0.1)),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+                    ),
                   ),
                 ),
               ),
@@ -152,7 +177,8 @@ class _DashboardBalanceCard extends ConsumerWidget {
                       color: Colors.white, 
                       fontWeight: FontWeight.bold,
                     ),
-                  ),
+                  ).animate(onPlay: (controller) => controller.repeat())
+                   .shimmer(delay: 2.seconds, duration: 2.seconds, color: Colors.white24),
                 ),
                 const SizedBox(height: 32),
                 Row(
@@ -170,35 +196,6 @@ class _DashboardBalanceCard extends ConsumerWidget {
     );
   }
 
-  LineChartData _buildSparklineData(List<TransactionModel> transactions) {
-    final recent = transactions.take(15).toList().reversed.toList();
-    double runningNet = 0;
-    List<FlSpot> spots = [];
-    for (int i = 0; i < recent.length; i++) {
-      final tx = recent[i];
-      tx.type == TransactionType.income ? runningNet += tx.amount : runningNet -= tx.amount;
-      spots.add(FlSpot(i.toDouble(), runningNet));
-    }
-    if (spots.isEmpty) spots.add(const FlSpot(0, 0));
-    if (spots.length == 1) spots.add(FlSpot(1, spots.first.y));
-
-    return LineChartData(
-      gridData: const FlGridData(show: false),
-      titlesData: const FlTitlesData(show: false),
-      borderData: FlBorderData(show: false),
-      lineBarsData: [
-        LineChartBarData(
-          spots: spots,
-          isCurved: true,
-          color: Colors.white,
-          barWidth: 3,
-          isStrokeCapRound: true,
-          dotData: const FlDotData(show: false),
-          belowBarData: BarAreaData(show: true, color: Colors.white.withValues(alpha: 0.1)),
-        ),
-      ],
-    );
-  }
 }
 
 class _StatLabel extends StatelessWidget {
@@ -234,7 +231,7 @@ class _DashboardMonthlyPulse extends ConsumerWidget {
           child: _PulseCard(
             label: 'Income',
             amount: currencyFormat.format(income),
-            color: Colors.green,
+            color: AppTheme.chartIncomeColor,
             icon: LucideIcons.trendingUp,
           ),
         ),
@@ -243,7 +240,7 @@ class _DashboardMonthlyPulse extends ConsumerWidget {
           child: _PulseCard(
             label: 'Spending',
             amount: currencyFormat.format(expense),
-            color: Colors.orange,
+            color: AppTheme.chartExpenseColor,
             icon: LucideIcons.trendingDown,
           ),
         ),
@@ -304,18 +301,23 @@ class _DashboardMonthlyFlowChart extends ConsumerWidget {
           SizedBox(
             height: 80,
             child: RepaintBoundary(
-              child: BarChart(
-                BarChartData(
-                  gridData: const FlGridData(show: false),
-                  titlesData: const FlTitlesData(show: false),
-                  borderData: FlBorderData(show: false),
-                  barGroups: [
-                    BarChartGroupData(x: 0, barRods: [
-                      BarChartRodData(toY: income, color: Colors.green, width: 30, borderRadius: BorderRadius.circular(6)),
-                      BarChartRodData(toY: expense, color: Colors.orange, width: 30, borderRadius: BorderRadius.circular(6)),
-                    ]),
-                  ],
-                ),
+              child: Consumer(
+                builder: (context, ref, _) {
+                  final dynamics = ref.watch(dashboardFlowDynamicsProvider);
+                  return BarChart(
+                    BarChartData(
+                      gridData: const FlGridData(show: false),
+                      titlesData: const FlTitlesData(show: false),
+                      borderData: FlBorderData(show: false),
+                      barGroups: [
+                        BarChartGroupData(x: 0, barRods: [
+                          BarChartRodData(toY: dynamics['income'] ?? 0, color: AppTheme.chartIncomeColor, width: 30, borderRadius: BorderRadius.circular(6)),
+                          BarChartRodData(toY: dynamics['expense'] ?? 0, color: AppTheme.chartExpenseColor, width: 30, borderRadius: BorderRadius.circular(6)),
+                        ]),
+                      ],
+                    ),
+                  );
+                }
               ),
             ),
           ),
@@ -363,6 +365,51 @@ class _RecentTransactionsSliver extends ConsumerWidget {
           ).animate().fade(delay: (index * 50).ms).slideX(begin: 0.1, end: 0);
         },
         childCount: transactions.length,
+      ),
+    );
+  }
+}
+
+class _DashboardFinancialTip extends StatelessWidget {
+  const _DashboardFinancialTip();
+
+  static const List<String> _tips = [
+    "Save first, spend later. Automate your savings early in the month.",
+    "Track every penny. Small leaks sink great ships.",
+    "The 50/30/20 rule: 50% Needs, 30% Wants, 20% Savings.",
+    "Emergency funds should cover 3-6 months of expenses.",
+    "Invest in yourself. Knowledge pays the best interest.",
+    "Avoid lifestyle inflation when your income increases.",
+    "Compare prices before big purchases. Wait 24 hours.",
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final tip = _tips[DateTime.now().day % _tips.length];
+    return FintrackUI.glassCard(
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(LucideIcons.lightbulb, color: Theme.of(context).primaryColor, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('PRO TIP', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey)),
+                const SizedBox(height: 4),
+                Text(tip, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

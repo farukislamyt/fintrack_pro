@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:fl_chart/fl_chart.dart';
 import '../models/transaction_model.dart';
 
 class TransactionNotifier extends Notifier<List<TransactionModel>> {
@@ -210,4 +211,32 @@ final thisMonthExpenseProvider = Provider<double>((ref) {
 final dashboardRecentTransactionsProvider = Provider<List<TransactionModel>>((ref) {
   final transactions = ref.watch(transactionProvider);
   return transactions.take(5).toList();
+});
+
+// Memoized analytics for dashboard performance
+final dashboardSparklineSpotsProvider = Provider<List<FlSpot>>((ref) {
+  final transactions = ref.watch(transactionProvider);
+  if (transactions.isEmpty) return [const FlSpot(0, 0)];
+  
+  final recent = transactions.take(15).toList().reversed.toList();
+  double runningNet = 0;
+  List<FlSpot> spots = [];
+  
+  for (int i = 0; i < recent.length; i++) {
+    final tx = recent[i];
+    tx.type == TransactionType.income ? runningNet += tx.amount : runningNet -= tx.amount;
+    spots.add(FlSpot(i.toDouble(), runningNet));
+  }
+  
+  if (spots.length == 1) spots.add(FlSpot(1, spots.first.y));
+  return spots;
+});
+
+final dashboardFlowDynamicsProvider = Provider<Map<String, double>>((ref) {
+  final income = ref.watch(thisMonthIncomeProvider);
+  final expense = ref.watch(thisMonthExpenseProvider);
+  return {
+    'income': income,
+    'expense': expense,
+  };
 });
