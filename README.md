@@ -1,6 +1,6 @@
 # 💰 FinTrack Pro — Professional Cash Management
 
-![FinTrack Pro Banner](fintrack_pro_banner_1776662207964.png)
+![FinTrack Pro Banner](fintrack_pro_banner.png)
 
 ## 🌟 The Vision
 **FinTrack Pro** is a high-performance, cinematic personal finance application designed for precision tracking and effortless financial control. Built with a focus on **visual excellence** and **performance**, it transforms the tedious task of expense tracking into a premium experience.

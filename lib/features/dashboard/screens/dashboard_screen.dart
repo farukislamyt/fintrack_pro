@@ -102,7 +102,7 @@ class _DashboardBalanceCard extends ConsumerWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [theme.primaryColor, const Color(0xFF818CF8)],
+          colors: [theme.primaryColor, const Color(0xFFF43F5E)],
         ),
         borderRadius: BorderRadius.circular(28),
         boxShadow: [

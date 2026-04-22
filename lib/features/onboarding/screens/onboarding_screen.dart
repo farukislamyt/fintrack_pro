@@ -143,13 +143,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [Theme.of(context).primaryColor, const Color(0xFF818CF8)]),
-              shape: BoxShape.circle,
+          ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Image.asset(
+              'assets/images/logo.png',
+              width: 80,
+              height: 80,
+              fit: BoxFit.cover,
             ),
-            child: const Icon(LucideIcons.piggyBank, size: 40, color: Colors.white),
           ).animate().scale(duration: 600.ms, curve: Curves.bounceOut),
           const SizedBox(height: 32),
           Text(

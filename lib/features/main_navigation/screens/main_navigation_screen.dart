@@ -82,7 +82,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [theme.primaryColor, const Color(0xFF818CF8)],
+                      colors: [theme.primaryColor, const Color(0xFFF43F5E)],
                     ),
                     shape: BoxShape.circle,
                     boxShadow: [

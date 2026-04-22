@@ -2,15 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // Brand Colors
-  static const Color primaryColor = Color(0xFF4F46E5); // Indigo
-  static const Color secondaryColor = Color(0xFF10B981); // Emerald green for positive
-  static const Color accentColor = Color(0xFF3B82F6); // Blue
+  // Brand Colors - NEW Magenta Theme
+  static const Color primaryColor = Color(0xFFE2136E); 
+  static const Color secondaryColor = Color(0xFF10B981); // Keep Emerald for stability
+  static const Color accentColor = Color(0xFFFB7185); // Lighter pink
   
   // Neutral Colors - Dark
-  static const Color backgroundColor = Color(0xFF0F172A); // Very dark slate
-  static const Color surfaceColor = Color(0xFF1E293B); // Dark slate
-  static const Color surfaceVariant = Color(0xFF334155); // Lighter dark slate
+  static const Color backgroundColor = Color(0xFF0F172A); 
+  static const Color surfaceColor = Color(0xFF1E293B); 
+  static const Color surfaceVariant = Color(0xFF334155); 
   
   // Neutral Colors - Light
   static const Color lightBgColor = Color(0xFFF8FAFC);
@@ -18,26 +18,20 @@ class AppTheme {
   static const Color lightSurfaceVariant = Color(0xFFF1F5F9);
 
   // Error Colors
-  static const Color errorColor = Color(0xFFEF4444); // Red for negative
+  static const Color errorColor = Color(0xFFF43F5E); 
 
-  // Modern Shadows
   static List<BoxShadow> get premiumShadow => [
     BoxShadow(
       color: Colors.black.withValues(alpha: 0.1),
       blurRadius: 20,
       offset: const Offset(0, 10),
     ),
-    BoxShadow(
-      color: Colors.black.withValues(alpha: 0.05),
-      blurRadius: 4,
-      offset: const Offset(0, 2),
-    ),
   ];
 
   static LinearGradient get primaryGradient => const LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [primaryColor, Color(0xFF818CF8)],
+    colors: [primaryColor, Color(0xFFF43F5E)],
   );
 
   static LinearGradient get darkGlassGradient => LinearGradient(
@@ -62,13 +56,11 @@ class AppTheme {
         surfaceContainer: surfaceVariant,
         error: errorColor,
         onPrimary: Colors.white,
-        onSecondary: Colors.white,
       ),
       textTheme: GoogleFonts.outfitTextTheme(ThemeData.dark().textTheme).copyWith(
         displayLarge: GoogleFonts.outfit(fontWeight: FontWeight.bold),
         displayMedium: GoogleFonts.outfit(fontWeight: FontWeight.bold),
         titleLarge: GoogleFonts.outfit(fontWeight: FontWeight.w600),
-        titleMedium: GoogleFonts.outfit(fontWeight: FontWeight.w500),
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
@@ -132,7 +124,6 @@ class AppTheme {
         displayLarge: GoogleFonts.outfit(fontWeight: FontWeight.bold),
         displayMedium: GoogleFonts.outfit(fontWeight: FontWeight.bold),
         titleLarge: GoogleFonts.outfit(fontWeight: FontWeight.w600),
-        titleMedium: GoogleFonts.outfit(fontWeight: FontWeight.w500),
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.transparent,
@@ -146,18 +137,6 @@ class AppTheme {
           borderRadius: BorderRadius.circular(24),
           side: BorderSide(color: Colors.black.withValues(alpha: 0.05)),
         ),
-      ),
-      navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: Colors.transparent,
-        indicatorColor: primaryColor.withValues(alpha: 0.1),
-        labelBehavior: NavigationDestinationLabelBehavior.alwaysHide,
-        height: 70,
-        iconTheme: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
-            return const IconThemeData(color: primaryColor);
-          }
-          return const IconThemeData(color: Colors.grey);
-        }),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,

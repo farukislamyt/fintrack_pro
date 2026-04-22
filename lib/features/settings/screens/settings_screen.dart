@@ -67,9 +67,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         children: [
           Row(
             children: [
-              const CircleAvatar(
-                radius: 30,
-                child: Icon(LucideIcons.user, size: 30),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.asset(
+                  'assets/images/logo.png',
+                  width: 60,
+                  height: 60,
+                  fit: BoxFit.cover,
+                ),
               ),
               const SizedBox(width: 16),
               Column(
